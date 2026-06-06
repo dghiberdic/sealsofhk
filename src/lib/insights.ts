@@ -19,6 +19,20 @@ import type {
 // a clinician.
 // ---------------------------------------------------------------------------
 
+// Population VO₂max norm (mL/kg·min), age/sex-adjusted. Base is the mid-point of
+// the reference's 30-something band (~40–44 men / 35–38 women), declining
+// ~8%/decade. Used only to *classify* a reading against typical — never a target.
+type Vo2Tier = "low" | "belowAverage" | "aboveAverage" | "high";
+function vo2Tier(value: number, age: number, sex: Profile["sex"]): Vo2Tier {
+  const base = sex === "male" ? 42 : 36; // female norm covers "other" too
+  const norm = base * Math.pow(0.92, Math.max(0, (age - 30) / 10));
+  const ratio = value / norm;
+  if (ratio < 0.85) return "low";
+  if (ratio < 1.0) return "belowAverage";
+  if (ratio < 1.18) return "aboveAverage";
+  return "high";
+}
+
 export function buildInsights(
   metrics: DayMetric[],
   vo2: { date: string; value: number }[],
@@ -28,6 +42,7 @@ export function buildInsights(
 ): Insight[] {
   const list: Insight[] = [];
   const bm = (k: string) => biomarkers.find((b) => b.key === k);
+  const hasMetrics = metrics.length > 0;
 
   // --- HEART · Framingham 10-year CVD risk (real, published formula) --------
   if (fram.available && fram.riskPct != null) {
@@ -58,46 +73,87 @@ export function buildInsights(
     });
   }
 
-  // --- HEART · Tier 1 · Hypertension pattern (cleared, watchOS 26) ----------
-  list.push({
-    id: "hypertension",
-    title: "Blood-pressure pattern",
-    focus: "heart",
-    tier: 1,
-    status: "look",
-    oneLine: "Your watch noticed a pattern that can suggest higher blood pressure.",
-    what: "Over 30 days, the watch quietly studied how your blood vessels respond to each heartbeat. It spotted a pattern that can go with chronic high blood pressure.",
-    meaning:
-      "High blood pressure is common, very treatable, and usually has no symptoms — which is exactly why a quiet pattern like this is worth knowing about.",
-    sure: "This is a regulator-cleared notification. But the watch flags a pattern, not a number — it can't give you a real blood-pressure reading.",
-    doThis:
-      "Confirm it with a blood-pressure cuff at home or at the clinic, and mention it to your doctor. There's nothing to do on your own beyond that.",
-    source: "watch",
-  });
+  // --- HEART · Tier 1 · Blood pressure (cuff reading + watch pattern) -------
+  // Classified by the ACC/AHA 2017 stages from the actual cuff numbers — the
+  // watch flags a 30-day pattern but never produces a value, so the cuff is the
+  // real signal. Omitted entirely if no cuff reading is on file.
+  const sysB = bm("systolic");
+  const diaB = bm("diastolic");
+  const sys = sysB?.value ?? null;
+  const dia = diaB?.value ?? null;
+  if (sys != null || dia != null) {
+    const stage2 = (sys != null && sys >= 140) || (dia != null && dia >= 90);
+    const stage1 = (sys != null && sys >= 130) || (dia != null && dia >= 80);
+    const bpStatus: Status = stage2 ? "look" : stage1 ? "watch" : "steady";
+    const reading =
+      sys != null && dia != null
+        ? `${sys}/${dia} mmHg`
+        : sys != null
+          ? `${sys} mmHg (systolic)`
+          : `${dia} mmHg (diastolic)`;
+    const treated = profile.onBpMeds;
+    list.push({
+      id: "hypertension",
+      title: "Blood pressure",
+      focus: "heart",
+      tier: 1,
+      status: bpStatus,
+      oneLine:
+        bpStatus === "steady"
+          ? `Your blood pressure is ${reading} — comfortably in range.`
+          : bpStatus === "watch"
+            ? `Your blood pressure is ${reading} — a little above ${treated ? "target while on treatment" : "the ideal range"}.`
+            : `Your blood pressure is ${reading} — in the high range.`,
+      what: "Blood pressure is the force of blood against your artery walls, read from a cuff. The watch can flag a 30-day vascular pattern, but only a cuff gives an actual number.",
+      meaning:
+        bpStatus === "steady"
+          ? "In-range blood pressure is one of the biggest things you can have working for your heart."
+          : `High blood pressure is common, usually silent, and very treatable${treated ? " — yours is already being managed, and these numbers help your doctor fine-tune it" : ""}.`,
+      sure: "A single reading can be raised by stress, caffeine or a recent walk — the pattern over time is what counts. The cuff is the real measure; the watch only hints.",
+      doThis:
+        bpStatus === "steady"
+          ? "Nothing — keep doing what you're doing."
+          : "Keep a short log of cuff readings at home and review them with your doctor. Never change blood-pressure medication on your own.",
+      source: "combined",
+    });
+  }
 
-  // --- HEART · Tier 1 · Low cardio fitness (VO₂ max) ------------------------
-  const vo2now = vo2[vo2.length - 1].value;
-  list.push({
-    id: "vo2",
-    title: "Cardio fitness (VO₂ max)",
-    focus: "heart",
-    tier: 1,
-    status: "watch",
-    oneLine: `Your cardio fitness is sitting at the low end for your age — about ${vo2now} mL/kg·min.`,
-    what: "Cardio fitness (VO₂ max) is an estimate of how much oxygen your body can use when working hard. It's one of the strongest single predictors of long-term health.",
-    meaning:
-      "A persistently low reading is linked to higher cardiovascular risk over time. The good news: it's one of the most changeable numbers you have.",
-    sure: "This is a cleared notification, age- and sex-adjusted. The trend over months matters more than any single reading.",
-    doThis:
-      "Gentle, regular aerobic activity (brisk walks count) tends to raise it. Worth a mention at your next check-up — no urgency.",
-    metric: undefined,
-    source: "watch",
-  });
+  // --- HEART · Tier 1 · Low cardio fitness (VO₂ max), age/sex-adjusted ------
+  if (vo2.length) {
+    const vo2now = vo2[vo2.length - 1].value;
+    const tier = vo2Tier(vo2now, profile.age, profile.sex);
+    const low = tier === "low" || tier === "belowAverage";
+    const vo2Status: Status = low ? "watch" : "steady";
+    const tierWord: Record<Vo2Tier, string> = {
+      low: "on the low side",
+      belowAverage: "a little below typical",
+      aboveAverage: "in the healthy range",
+      high: "above typical — excellent",
+    };
+    list.push({
+      id: "vo2",
+      title: "Cardio fitness (VO₂ max)",
+      focus: "heart",
+      tier: 1,
+      status: vo2Status,
+      oneLine: `Your cardio fitness is about ${vo2now} mL/kg·min — ${tierWord[tier]} for your age and sex.`,
+      what: "Cardio fitness (VO₂ max) is an estimate of how much oxygen your body can use when working hard. It's one of the strongest single predictors of long-term health.",
+      meaning: low
+        ? "A reading on the low side is linked to higher cardiovascular risk over time — but it's also one of the most changeable numbers you have."
+        : "A reading in or above the typical range for your age is a genuinely good sign for long-term heart health.",
+      sure: "This is age- and sex-adjusted against population norms. The trend over months matters more than any single reading.",
+      doThis: low
+        ? "Gentle, regular aerobic activity (brisk walks count) tends to raise it. Worth a mention at your next check-up — no urgency."
+        : "Nothing needed — keep up whatever you're doing.",
+      metric: undefined,
+      source: "watch",
+    });
+  }
 
   // --- HEART · Tier 2 · Cardiovascular-risk trend ---------------------------
   const rhr = drift(metrics, "restingHR");
   const hrv = drift(metrics, "hrv");
-  if (rhr.dir === "up" || hrv.dir === "down") {
+  if (hasMetrics && (rhr.dir === "up" || hrv.dir === "down")) {
     list.push({
       id: "cv-trend",
       title: "Resting heart rate & HRV trend",
@@ -195,78 +251,97 @@ export function buildInsights(
     source: "watch",
   });
 
-  // --- SECONDARY · Sleep apnea (Tier 1) — clear in this demo ----------------
-  const breathingOk = recent(metrics, "spo2") > 95;
-  list.push({
-    id: "apnea",
-    title: "Breathing during sleep",
-    focus: "secondary",
-    tier: 1,
-    status: breathingOk ? "steady" : "watch",
-    oneLine: breathingOk
-      ? "No concerning pattern of breathing disturbances in your sleep."
-      : "Some breathing disturbances showed up overnight.",
-    what: "The watch watches for interruptions in your breathing during sleep — the basis for its sleep-apnea notification.",
-    meaning: breathingOk
-      ? "Your overnight blood oxygen and breathing look settled."
-      : "A 30-day pattern of disturbances can suggest sleep apnea, which is very treatable.",
-    sure: "Sleep-apnea screening is regulator-cleared (Tier 1). It needs a 30-day pattern, not a single odd night.",
-    doThis: breathingOk
-      ? "Nothing — this is an all-clear."
-      : "Worth asking your doctor about a sleep study.",
-    metric: "spo2",
-    metricUnit: "%",
-    source: "watch",
-  });
+  // --- SECONDARY · Sleep apnea (Tier 1) — 30-day breathing-disturbance pattern
+  // The real signal is the Breathing-Disturbances index, not SpO₂ — a sleep-apnea
+  // notification needs a 30-day *pattern* of elevated nights, not one odd night.
+  if (hasMetrics) {
+    const last30 = metrics.slice(-30);
+    const elevatedNights = last30.filter(
+      (m) => Number(m.breathingDisturbances) >= 8,
+    ).length;
+    const lowSpo2 = recent(metrics, "spo2") < 95;
+    const apneaPattern = elevatedNights >= 10 || lowSpo2;
+    list.push({
+      id: "apnea",
+      title: "Breathing during sleep",
+      focus: "secondary",
+      tier: 1,
+      status: apneaPattern ? "watch" : "steady",
+      oneLine: !apneaPattern
+        ? "No concerning pattern of breathing disturbances in your sleep."
+        : elevatedNights >= 10
+          ? `Breathing disturbances were elevated on ${elevatedNights} of the last 30 nights.`
+          : "Your overnight blood oxygen dipped below its usual range on a few nights.",
+      what: "The watch tracks interruptions in your breathing during sleep (the Breathing-Disturbances index) — the basis for its sleep-apnea notification.",
+      meaning: apneaPattern
+        ? "A 30-day pattern of disturbances can suggest sleep apnea, which is very treatable."
+        : "Your overnight breathing and blood oxygen look settled.",
+      sure: "Sleep-apnea screening is regulator-cleared (Tier 1). It needs a 30-day pattern, not a single odd night.",
+      doThis: apneaPattern
+        ? "Worth asking your doctor about a sleep study."
+        : "Nothing — this is an all-clear.",
+      metric: "breathingDisturbances",
+      metricUnit: "/h",
+      source: "watch",
+    });
+  }
 
-  // --- SECONDARY · Sleep quality (Tier 2-ish, from Sleep Score) -------------
-  const sleepNow = recent(metrics, "sleepScore");
-  list.push({
-    id: "sleep",
-    title: "Sleep quality",
-    focus: "secondary",
-    tier: 2,
-    status: sleepNow > 70 ? "steady" : "watch",
-    oneLine: `Your Sleep Score is averaging about ${round(sleepNow)} out of 100 lately.`,
-    what: "The Sleep Score blends how long you sleep (the biggest lever), how consistent your bedtime is, and how often you wake.",
-    meaning:
-      "Steady, good sleep supports almost everything else — recovery, mood, heart and metabolic health.",
-    sure: "The score is personalised to your own recent history, not a universal ideal.",
-    doThis:
-      sleepNow > 70
-        ? "Nothing — your sleep looks fine."
-        : "If it dips, look at what's waking you (caffeine, alcohol, room temperature, noise).",
-    metric: "sleepScore",
-    metricUnit: "/100",
-    source: "watch",
-  });
+  // --- SECONDARY · Sleep quality — judged against the person's OWN normal ---
+  if (hasMetrics) {
+    const sleepNow = recent(metrics, "sleepScore");
+    const sleepBase = baseline(metrics, "sleepScore");
+    // Flag only if meaningfully below your own baseline, or genuinely low.
+    const sleepLow = sleepNow < 60 || (sleepBase > 0 && sleepNow < sleepBase * 0.9);
+    list.push({
+      id: "sleep",
+      title: "Sleep quality",
+      focus: "secondary",
+      tier: 2,
+      status: sleepLow ? "watch" : "steady",
+      oneLine: `Your Sleep Score is averaging about ${round(sleepNow)} out of 100 lately${
+        sleepLow ? ` — below your own usual of ${round(sleepBase)}` : ""
+      }.`,
+      what: "The Sleep Score blends how long you sleep (the biggest lever), how consistent your bedtime is, and how often you wake.",
+      meaning:
+        "Steady, good sleep supports almost everything else — recovery, mood, heart and metabolic health.",
+      sure: "The score is personalised to your own recent history, not a universal ideal — we only flag it when it slips below your normal.",
+      doThis: sleepLow
+        ? "Look at what's changed — caffeine, alcohol, room temperature, noise — and see if it recovers over a week or two."
+        : "Nothing — your sleep looks fine.",
+      metric: "sleepScore",
+      metricUnit: "/100",
+      source: "watch",
+    });
+  }
 
   // --- SECONDARY · "Something coming on?" cluster (Tier 2) -------------------
-  const t = today(metrics);
-  const tempUp = t.wristTempDelta > 0.3;
-  const rrUp = t.respiratoryRate > baseline(metrics, "respiratoryRate") + 1.5;
-  const clusterCount =
-    (t.vitalsOutliers >= 1 ? 1 : 0) + (tempUp ? 1 : 0) + (rrUp ? 1 : 0);
-  list.push({
-    id: "illness",
-    title: "Are you fighting something?",
-    focus: "secondary",
-    tier: 2,
-    status: clusterCount >= 2 ? "watch" : "steady",
-    oneLine:
-      clusterCount >= 2
-        ? "A few overnight signals drifted together — your body may be working on something."
-        : "No sign your body is fighting anything off.",
-    what: "When resting heart rate, breathing rate and wrist temperature rise together overnight while HRV dips, it often means your body is busy — an infection coming on, or just a hard night or a drink.",
-    meaning:
-      "This is the classic “two or more Vitals outliers in one night” pattern. One signal alone is usually nothing; several together is more telling.",
-    sure: "Well-documented (Tier 2) — but the infection, stress, overtraining and hangover signatures look nearly identical. The watch can't tell them apart; only you can add the context.",
-    doThis:
-      clusterCount >= 2
-        ? "Rest, hydrate, and see how you feel in a day or two. See a doctor if you actually feel unwell."
-        : "Nothing — all calm.",
-    source: "watch",
-  });
+  if (hasMetrics) {
+    const t = today(metrics);
+    const tempUp = t.wristTempDelta > 0.3;
+    const rrUp = t.respiratoryRate > baseline(metrics, "respiratoryRate") + 1.5;
+    const clusterCount =
+      (t.vitalsOutliers >= 1 ? 1 : 0) + (tempUp ? 1 : 0) + (rrUp ? 1 : 0);
+    list.push({
+      id: "illness",
+      title: "Are you fighting something?",
+      focus: "secondary",
+      tier: 2,
+      status: clusterCount >= 2 ? "watch" : "steady",
+      oneLine:
+        clusterCount >= 2
+          ? "A few overnight signals drifted together — your body may be working on something."
+          : "No sign your body is fighting anything off.",
+      what: "When resting heart rate, breathing rate and wrist temperature rise together overnight while HRV dips, it often means your body is busy — an infection coming on, or just a hard night or a drink.",
+      meaning:
+        "This is the classic “two or more Vitals outliers in one night” pattern. One signal alone is usually nothing; several together is more telling.",
+      sure: "Well-documented (Tier 2) — but the infection, stress, overtraining and hangover signatures look nearly identical. The watch can't tell them apart; only you can add the context.",
+      doThis:
+        clusterCount >= 2
+          ? "Rest, hydrate, and see how you feel in a day or two. See a doctor if you actually feel unwell."
+          : "Nothing — all calm.",
+      source: "watch",
+    });
+  }
 
   return list;
 }

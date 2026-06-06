@@ -50,6 +50,9 @@ export function generateMetrics(): DayMetric[] {
     const spo2 = Math.round(97 + (rand() - 0.5) * 1.5);
     // Walking HR rises only mildly (~+7%) — below the W9 threshold by design.
     const walkingHR = Math.round(86 + t * 6 + (rand() - 0.5) * 4);
+    // Overnight breathing-disturbance index — Margaret's stays low (0–5/h), so the
+    // 30-day apnea pattern never fires. Real interrupted breathing pushes this up.
+    const breathingDisturbances = Math.max(0, Math.round(2.2 + (rand() - 0.5) * 5));
 
     const sleepDuration = Math.round(38 + (rand() - 0.4) * 12); // /50
     const sleepBedtime = Math.round(22 + (rand() - 0.4) * 8); // /30
@@ -75,6 +78,7 @@ export function generateMetrics(): DayMetric[] {
       respiratoryRate,
       wristTempDelta,
       spo2,
+      breathingDisturbances,
       sleepScore,
       sleepDuration,
       sleepBedtime,

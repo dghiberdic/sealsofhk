@@ -26,6 +26,7 @@ export interface DayMetric {
   respiratoryRate: number; // breaths/min
   wristTempDelta: number; // °C deviation from baseline
   spo2: number; // % — HKQuantityTypeIdentifierOxygenSaturation
+  breathingDisturbances: number; // index — AppleSleepingBreathingDisturbances (apnea screen)
   sleepScore: number; // 0–100
   sleepDuration: number; // 0–50 component
   sleepBedtime: number; // 0–30 component
