@@ -11,3 +11,10 @@ dist
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# graphify generated knowledge-graph output (regenerable; do not commit)
+graphify-out/
+
+# local Claude Code / graphify setup — keep out of version control
+.claude/
+CLAUDE.md
