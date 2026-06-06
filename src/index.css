@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  @apply bg-cream text-ink font-sans antialiased;
+  font-size: 16px;
+}
+
+/* Respect users who bump their browser font size — the layout stays calm. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    @apply font-serif text-ink;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-hair bg-paper shadow-soft;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3
+      text-base font-medium transition focus:outline-none focus-visible:ring-2
+      focus-visible:ring-clay/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream;
+  }
+  .btn-primary {
+    @apply btn bg-clay text-paper hover:bg-clay-deep;
+  }
+  .btn-ghost {
+    @apply btn border border-hair bg-paper text-ink hover:bg-cream;
+  }
+  .btn-quiet {
+    @apply btn text-muted hover:text-ink;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-muted;
+  }
+  .field {
+    @apply w-full rounded-xl border border-hair bg-paper px-4 py-3 text-base text-ink
+      placeholder:text-faint focus:border-clay/60 focus:outline-none
+      focus:ring-2 focus:ring-clay/20;
+  }
+  .link {
+    @apply text-clay-deep underline decoration-clay/30 underline-offset-2 hover:decoration-clay;
+  }
+}
+
+/* Dark mode — warm and dim, not harsh black. */
+.dark body {
+  @apply bg-[#23201c] text-[#ece5da];
+}
+.dark .card {
+  @apply border-[#3a342c] bg-[#2b2722] shadow-none;
+}
+.dark .btn-ghost {
+  @apply border-[#3a342c] bg-[#2b2722] text-[#ece5da] hover:bg-[#322d27];
+}
+.dark .field {
+  @apply border-[#3a342c] bg-[#2b2722] text-[#ece5da];
+}
+
+/* Print: only the report shows, clean on white. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .print-page {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
