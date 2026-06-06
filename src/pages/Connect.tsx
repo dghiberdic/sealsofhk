@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, Droplet, FileText, Icon, Watch } from "../components/icons";
+import { LabPhotoUpload } from "../components/LabPhotoUpload";
 import { useStore } from "../lib/store";
 
 type Phase = "idle" | "importing" | "done";
@@ -10,6 +11,7 @@ export function Connect() {
   const { set, biomarkers } = useStore();
   const [phase, setPhase] = useState<Phase>("idle");
   const [step, setStep] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
 
   const runImport = () => {
     setPhase("importing");
@@ -102,10 +104,17 @@ export function Connect() {
             <button className="btn-ghost" onClick={() => {}}>
               Enter results by hand
             </button>
-            <button className="btn-ghost" onClick={() => {}}>
-              Upload a lab report
+            <button
+              className="btn-ghost"
+              onClick={() => setShowUpload((s) => !s)}
+            >
+              Photograph a lab report
             </button>
           </div>
+
+          {showUpload && (
+            <LabPhotoUpload onClose={() => setShowUpload(false)} />
+          )}
           <div className="mt-4 rounded-input bg-sand p-4">
             <p className="flex items-center gap-1.5 font-medium text-ink">
               <Icon icon={Check} size={18} className="text-sage" />
