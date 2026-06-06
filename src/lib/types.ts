@@ -20,18 +20,34 @@ export type Status = "steady" | "watch" | "look";
 
 export interface DayMetric {
   date: string; // ISO date
-  restingHR: number; // bpm
-  hrv: number; // ms (SDNN)
+  restingHR: number; // bpm — HKQuantityTypeIdentifierRestingHeartRate
+  hrv: number; // ms (SDNN) — HKQuantityTypeIdentifierHeartRateVariabilitySDNN
+  walkingHR: number; // bpm — HKQuantityTypeIdentifierWalkingHeartRateAverage
   respiratoryRate: number; // breaths/min
   wristTempDelta: number; // °C deviation from baseline
-  spo2: number; // %
+  spo2: number; // % — HKQuantityTypeIdentifierOxygenSaturation
   sleepScore: number; // 0–100
   sleepDuration: number; // 0–50 component
   sleepBedtime: number; // 0–30 component
   sleepInterruptions: number; // 0–20 component
-  steps: number;
+  steps: number; // HKQuantityTypeIdentifierStepCount
   activeEnergy: number; // kcal
   vitalsOutliers: number; // count of overnight Vitals outliers
+}
+
+// On-demand single-lead ECG — we read the watch's CLASSIFICATION label only,
+// never the raw waveform (reading the signal would make us a signal processor).
+export type EcgClass = "sinusRhythm" | "atrialFibrillation" | "inconclusive";
+
+export interface EcgReading {
+  date: string;
+  classification: EcgClass;
+  heartRate: number; // bpm reported alongside the classification
+}
+
+// Apple's own background AFib-detection notification firing.
+export interface RhythmEvent {
+  date: string;
 }
 
 export interface Biomarker {
@@ -59,9 +75,16 @@ export interface Profile {
   conditions: string[];
   medications: string[];
   familyHistory: string[];
+  allergies: string[];
   smoker: "never" | "former" | "current";
   activity: "low" | "moderate" | "high";
   setUpByCarer: boolean;
+  // Clinical flags — feed the Framingham CVD score and CHA₂DS₂-VASc context.
+  onBpMeds: boolean; // on blood-pressure medication (changes the SBP coefficient)
+  diabetes: boolean; // diagnosed diabetes
+  priorStroke: boolean; // prior stroke / TIA
+  priorHeartFailure: boolean; // prior heart-failure diagnosis
+  knownVascularDisease: boolean; // known vascular disease
 }
 
 // A derived, plain-language insight — the "dish".

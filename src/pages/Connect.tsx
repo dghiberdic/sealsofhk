@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Droplet, Icon, Watch } from "../components/icons";
+import { Check, Droplet, FileText, Icon, Watch } from "../components/icons";
 import { useStore } from "../lib/store";
 
 type Phase = "idle" | "importing" | "done";
@@ -16,9 +16,10 @@ export function Connect() {
     const steps = [
       "Connecting to Apple Health…",
       "Reading your last 90 days…",
-      "Bringing in heart & circulation…",
-      "Bringing in sleep & overnight vitals…",
-      "Learning your personal baseline…",
+      "Bringing in heart rate, HRV & walking heart rate…",
+      "Reading ECG classifications & rhythm history…",
+      "Bringing in blood oxygen, sleep & overnight vitals…",
+      "Learning your personal 30-day baseline…",
     ];
     let i = 0;
     setStep(steps[0]);
@@ -51,7 +52,8 @@ export function Connect() {
             Connect your Apple Watch & Health
           </h2>
           <p className="mt-1 text-muted">
-            We'll bring in your heart, sleep, activity, mobility and overnight
+            We'll bring in resting & walking heart rate, HRV, blood oxygen, ECG
+            classifications, rhythm notifications, steps, sleep and overnight
             vitals.
           </p>
 
@@ -112,6 +114,29 @@ export function Connect() {
             <p className="mt-1 text-sm text-muted">
               Please check these look right — we'll ask you to confirm before
               saving. (Pre-loaded for this preview.)
+            </p>
+          </div>
+        </div>
+
+        {/* eHealth / clinical record */}
+        <div className="card mt-5 p-6">
+          <h2 className="flex items-center gap-2 text-xl">
+            <Icon icon={FileText} size={22} className="text-clay" />
+            Link your eHealth record
+          </h2>
+          <p className="mt-1 text-muted">
+            Your existing conditions, medications and allergies, pulled from Hong
+            Kong's eHealth record — so your report shows what you're already on.
+          </p>
+          <div className="mt-4 rounded-input bg-sand p-4">
+            <p className="flex items-center gap-1.5 font-medium text-ink">
+              <Icon icon={Check} size={18} className="text-sage" />
+              Linked — conditions, medications & allergies imported.
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              In this preview the eHealth record is mocked as a FHIR R4 bundle.
+              In production this needs HCP registration and your sharing consent
+              under the eHRSS Ordinance (Cap. 625).
             </p>
           </div>
         </div>

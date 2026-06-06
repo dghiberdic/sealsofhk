@@ -13,10 +13,14 @@ import {
 } from "./insights";
 import {
   defaultProfile,
+  generateEcg,
   generateMetrics,
+  generateRhythmEvents,
   generateVo2,
   sampleBiomarkers,
 } from "./sampleData";
+import { framingham } from "./framingham";
+import { assessWatch } from "./rules";
 import type { Biomarker, DoctorQuestion, Profile } from "./types";
 
 const KEY = "heartsum.v1";
@@ -48,7 +52,14 @@ function load(): Persisted {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return initial;
-    return { ...initial, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    // Deep-merge the profile so older saved state gains any newly-added fields
+    // (e.g. allergies, clinical flags) rather than crashing on undefined.
+    return {
+      ...initial,
+      ...parsed,
+      profile: { ...defaultProfile, ...(parsed.profile ?? {}) },
+    };
   } catch {
     return initial;
   }
@@ -60,9 +71,13 @@ interface StoreValue extends Persisted {
   // derived
   metrics: ReturnType<typeof generateMetrics>;
   vo2: ReturnType<typeof generateVo2>;
+  ecg: ReturnType<typeof generateEcg>;
+  rhythmEvents: ReturnType<typeof generateRhythmEvents>;
   insights: ReturnType<typeof buildInsights>;
   questions: DoctorQuestion[];
   overall: ReturnType<typeof overallStatus>;
+  framingham: ReturnType<typeof framingham>;
+  watch: ReturnType<typeof assessWatch>;
 }
 
 const Ctx = createContext<StoreValue | null>(null);
@@ -81,10 +96,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // The watch series is simulated and stable for the demo.
   const metrics = useMemo(() => generateMetrics(), []);
   const vo2 = useMemo(() => generateVo2(), []);
+  const ecg = useMemo(() => generateEcg(), []);
+  const rhythmEvents = useMemo(() => generateRhythmEvents(), []);
+
+  // Real, deterministic computations: Framingham CVD risk + watch trend rules.
+  const fram = useMemo(
+    () => framingham(state.profile, state.biomarkers),
+    [state.profile, state.biomarkers],
+  );
+  const watch = useMemo(
+    () => assessWatch(metrics, ecg, rhythmEvents, state.profile.name),
+    [metrics, ecg, rhythmEvents, state.profile.name],
+  );
 
   const insights = useMemo(
-    () => buildInsights(metrics, vo2, state.biomarkers, state.profile),
-    [metrics, vo2, state.biomarkers, state.profile],
+    () => buildInsights(metrics, vo2, state.biomarkers, state.profile, fram),
+    [metrics, vo2, state.biomarkers, state.profile, fram],
   );
 
   const generated = useMemo(() => buildQuestions(insights), [insights]);
@@ -101,9 +128,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     reset: () => setState(initial),
     metrics,
     vo2,
+    ecg,
+    rhythmEvents,
     insights,
     questions,
     overall,
+    framingham: fram,
+    watch,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

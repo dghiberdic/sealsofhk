@@ -166,6 +166,59 @@ export function ProfileSetup() {
               </select>
             </div>
           </div>
+
+          <div className="card p-5">
+            <label className="field-label">
+              Allergies{" "}
+              <span className="text-faint">— separate with commas</span>
+            </label>
+            <input
+              className="field"
+              value={p.allergies.join(", ")}
+              onChange={(e) =>
+                update({
+                  allergies: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                })
+              }
+              placeholder="e.g. penicillin"
+            />
+            <p className="mt-2 text-sm text-faint">
+              Shown on your doctor report as safety context — never used for
+              advice.
+            </p>
+          </div>
+
+          <div className="card p-5">
+            <p className="field-label">A few health questions</p>
+            <p className="mb-3 text-sm text-faint">
+              These help us estimate your 10-year heart risk accurately. Tick any
+              that apply.
+            </p>
+            <div className="space-y-2.5">
+              {(
+                [
+                  ["onBpMeds", "I take blood-pressure medication"],
+                  ["diabetes", "I have been diagnosed with diabetes"],
+                  ["priorStroke", "I have had a stroke or mini-stroke (TIA)"],
+                  ["priorHeartFailure", "I have a heart-failure diagnosis"],
+                  ["knownVascularDisease", "I have known vascular disease"],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key} className="flex cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 accent-clay"
+                    checked={p[key]}
+                    onChange={(e) => update({ [key]: e.target.checked } as never)}
+                  />
+                  <span className="text-ink">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 flex gap-3">

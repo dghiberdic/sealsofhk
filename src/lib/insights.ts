@@ -1,10 +1,12 @@
 import { baseline, drift, recent, round, today } from "./analysis";
+import type { FraminghamResult } from "./framingham";
 import type {
   Biomarker,
   DayMetric,
   DoctorQuestion,
   Insight,
   Profile,
+  Status,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -22,9 +24,39 @@ export function buildInsights(
   vo2: { date: string; value: number }[],
   biomarkers: Biomarker[],
   profile: Profile,
+  fram: FraminghamResult,
 ): Insight[] {
   const list: Insight[] = [];
   const bm = (k: string) => biomarkers.find((b) => b.key === k);
+
+  // --- HEART · Framingham 10-year CVD risk (real, published formula) --------
+  if (fram.available && fram.riskPct != null) {
+    const catStatus: Record<string, Status> = {
+      low: "steady",
+      moderate: "watch",
+      high: "look",
+    };
+    const catWord = { low: "low", moderate: "moderate", high: "high" } as const;
+    list.push({
+      id: "cvd-risk",
+      title: "10-year heart-risk estimate",
+      focus: "heart",
+      tier: 2,
+      status: catStatus[fram.category!],
+      oneLine: `Your estimated chance of a cardiovascular event in the next 10 years is about ${fram.riskPct}% — that's in the ${catWord[fram.category!]} band.`,
+      what: "This is the Framingham General CVD Risk score — a long-established formula that combines your age, sex, cholesterol, blood pressure, smoking and diabetes into a single 10-year estimate.",
+      meaning:
+        fram.category === "low"
+          ? "A low estimate is reassuring. Keeping it there is mostly about staying active and keeping your numbers steady."
+          : "A moderate-to-high estimate doesn't mean anything is wrong now — it means the levers (blood pressure, cholesterol, activity) are worth a conversation with your doctor.",
+      sure: "The formula is published and validated for ages 30–79 without prior heart disease. It's an estimate to discuss, not a verdict.",
+      doThis:
+        fram.category === "low"
+          ? "Nothing in particular — keep doing what you're doing."
+          : "Bring this number to your doctor. The inputs that move it most — blood pressure and cholesterol — are very treatable.",
+      source: "combined",
+    });
+  }
 
   // --- HEART · Tier 1 · Hypertension pattern (cleared, watchOS 26) ----------
   list.push({
@@ -247,6 +279,16 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
   for (const i of insights) {
     if (i.status === "steady") continue;
     switch (i.id) {
+      case "cvd-risk":
+        add({
+          id: "q-cvd",
+          text: "Go over my 10-year heart-risk estimate",
+          why: "My Framingham CVD risk came out in the moderate-to-high band — I'd like to understand which levers matter most for me.",
+          tier: 2,
+          insightId: "cvd-risk",
+          source: "combined",
+        });
+        break;
       case "hypertension":
         add({
           id: "q-bp",

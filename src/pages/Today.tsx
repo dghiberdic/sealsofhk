@@ -119,8 +119,15 @@ function vsUsual(now: number, base: number, higherIsBetter: boolean) {
     : { text: `A touch ${dir} than usual`, tone: "text-gold-deep" };
 }
 
+// Caretaker alert colours — the green / yellow / red the family member sees.
+const ragMeta = {
+  green: { cls: "border-sage-border bg-sage-tint", dot: "bg-sage", word: "All clear" },
+  yellow: { cls: "border-gold-border bg-gold-tint", dot: "bg-gold", word: "Worth a check-up" },
+  red: { cls: "border-brick-border bg-brick-tint", dot: "bg-brick", word: "Please call the doctor" },
+} as const;
+
 export function Today() {
-  const { profile, metrics, overall } = useStore();
+  const { profile, metrics, overall, watch, carerName } = useStore();
   const t = today(metrics);
 
   const headline =
@@ -166,6 +173,20 @@ export function Today() {
           See the {overall.count === 1 ? "pattern" : "patterns"} worth a closer
           look <Icon icon={ChevronRight} size={15} />
         </Link>
+      )}
+
+      {/* Caretaker alert — the simple green/yellow/red a family member sees */}
+      {profile.setUpByCarer && (
+        <div className={`mt-6 rounded-card border p-5 ${ragMeta[watch.status].cls}`}>
+          <div className="flex items-center gap-2">
+            <span className={`h-2.5 w-2.5 rounded-full ${ragMeta[watch.status].dot}`} />
+            <span className="eyebrow">
+              For {carerName ?? "your family"} · {ragMeta[watch.status].word}
+            </span>
+          </div>
+          <p className="mt-2 leading-relaxed text-ink">{watch.caretaker.zh}</p>
+          <p className="mt-1 leading-relaxed text-muted">{watch.caretaker.en}</p>
+        </div>
       )}
 
       {/* Today's readings — only what's true today, in plain language */}

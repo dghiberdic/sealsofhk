@@ -1,4 +1,10 @@
-import type { Biomarker, DayMetric, Profile } from "./types";
+import type {
+  Biomarker,
+  DayMetric,
+  EcgReading,
+  Profile,
+  RhythmEvent,
+} from "./types";
 
 // ---------------------------------------------------------------------------
 // Seeded pseudo-random so the demo looks the same every time it loads.
@@ -38,10 +44,12 @@ export function generateMetrics(): DayMetric[] {
     const t = Math.max(0, (35 - daysAgo) / 35);
 
     const restingHR = Math.round(58 + t * 7 + (rand() - 0.5) * 3);
-    const hrv = Math.round(48 - t * 10 + (rand() - 0.5) * 6);
+    const hrv = Math.round(48 - t * 13 + (rand() - 0.5) * 6);
     const respiratoryRate = +(14 + (rand() - 0.5) * 1.2).toFixed(1);
     const wristTempDelta = +((rand() - 0.5) * 0.5).toFixed(2);
     const spo2 = Math.round(97 + (rand() - 0.5) * 1.5);
+    // Walking HR rises only mildly (~+7%) — below the W9 threshold by design.
+    const walkingHR = Math.round(86 + t * 6 + (rand() - 0.5) * 4);
 
     const sleepDuration = Math.round(38 + (rand() - 0.4) * 12); // /50
     const sleepBedtime = Math.round(22 + (rand() - 0.4) * 8); // /30
@@ -63,6 +71,7 @@ export function generateMetrics(): DayMetric[] {
       date: isoDaysAgo(daysAgo),
       restingHR,
       hrv,
+      walkingHR,
       respiratoryRate,
       wristTempDelta,
       spo2,
@@ -93,19 +102,43 @@ export function generateVo2(): { date: string; value: number }[] {
   return out;
 }
 
-// Default profile: "Margaret", 67 — chosen so the demo's signals are meaningful.
+// On-demand ECG readings — a few over the last month, all sinus rhythm here, so
+// the AFib rule (W6) stays clear and the report can show an "ECG: OK" line.
+export function generateEcg(): EcgReading[] {
+  const rand = mulberry32(412);
+  return [28, 16, 4].map((d) => ({
+    date: isoDaysAgo(d),
+    classification: "sinusRhythm" as const,
+    heartRate: Math.round(68 + (rand() - 0.5) * 8),
+  }));
+}
+
+// No irregular-rhythm notifications in the default demo (W7 stays clear).
+export function generateRhythmEvents(): RhythmEvent[] {
+  return [];
+}
+
+// Default profile: "Margaret", 67 — a realistic elderly CVD-monitoring profile,
+// chosen so both the Framingham score and the watch rules produce meaningful,
+// non-alarming results (moderate risk + a couple of yellow trends).
 export const defaultProfile: Profile = {
   name: "Margaret",
   age: 67,
   sex: "female",
   heightCm: 162,
   weightKg: 64,
-  conditions: ["Borderline high blood pressure"],
-  medications: [],
+  conditions: ["Hypertension", "High cholesterol (hyperlipidemia)"],
+  medications: ["Amlodipine 5 mg — once daily", "Atorvastatin 20 mg — once daily"],
   familyHistory: ["Father — heart disease (heart attack at 70)"],
+  allergies: ["Penicillin"],
   smoker: "never",
   activity: "low",
   setUpByCarer: true,
+  onBpMeds: true,
+  diabetes: false,
+  priorStroke: false,
+  priorHeartFailure: false,
+  knownVascularDisease: false,
 };
 
 // Self-entered lab results. ALL general medical knowledge — NOT from the watch
@@ -130,7 +163,7 @@ export const sampleBiomarkers: Biomarker[] = [
     plain: "The kind that can build up in artery walls.",
     value: 3.8,
     unit: "mmol/L",
-    refHigh: 3.0,
+    refHigh: 3.4,
     highIsConcern: true,
     fromWatch: false,
     generalKnowledge: true,
@@ -190,7 +223,7 @@ export const sampleBiomarkers: Biomarker[] = [
     plain: "Your average blood sugar over the last ~3 months.",
     value: 5.9,
     unit: "%",
-    refHigh: 5.7,
+    refHigh: 6.5,
     highIsConcern: true,
     fromWatch: false,
     generalKnowledge: true,
@@ -214,7 +247,7 @@ export const sampleBiomarkers: Biomarker[] = [
     plain: "The top number, from a blood-pressure cuff (the watch can't give this).",
     value: 138,
     unit: "mmHg",
-    refHigh: 130,
+    refHigh: 140,
     highIsConcern: true,
     fromWatch: false,
     generalKnowledge: true,
@@ -226,7 +259,7 @@ export const sampleBiomarkers: Biomarker[] = [
     plain: "The bottom number, from a blood-pressure cuff.",
     value: 86,
     unit: "mmHg",
-    refHigh: 80,
+    refHigh: 90,
     highIsConcern: true,
     fromWatch: false,
     generalKnowledge: true,
