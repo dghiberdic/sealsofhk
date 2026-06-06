@@ -5,12 +5,11 @@ import { Welcome } from "./pages/Welcome";
 import { ProfileSetup } from "./pages/Profile";
 import { Connect } from "./pages/Connect";
 import { Today } from "./pages/Today";
-import { Health } from "./pages/Health";
-import { Trends } from "./pages/Trends";
+import { Signals } from "./pages/Signals";
+import { MoreInfo } from "./pages/MoreInfo";
 import { InsightDetail } from "./pages/InsightDetail";
 import { AskDoctor } from "./pages/AskDoctor";
 import { Report } from "./pages/Report";
-import { Learn } from "./pages/Learn";
 import { Settings } from "./pages/Settings";
 
 function AppShell() {
@@ -23,13 +22,16 @@ function AppShell() {
     <Layout>
       <Routes>
         <Route path="/today" element={<Today />} />
-        <Route path="/health" element={<Health />} />
-        <Route path="/trends" element={<Trends />} />
+        <Route path="/signals" element={<Signals />} />
+        <Route path="/more" element={<MoreInfo />} />
         <Route path="/insight/:id" element={<InsightDetail />} />
         <Route path="/ask" element={<AskDoctor />} />
         <Route path="/report" element={<Report />} />
-        <Route path="/learn" element={<Learn />} />
         <Route path="/settings" element={<Settings />} />
+        {/* Old paths → new homes, so existing links never break */}
+        <Route path="/health" element={<Navigate to="/signals" replace />} />
+        <Route path="/trends" element={<Navigate to="/more" replace />} />
+        <Route path="/learn" element={<Navigate to="/more" replace />} />
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Routes>
     </Layout>

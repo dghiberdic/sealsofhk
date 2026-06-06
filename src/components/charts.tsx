@@ -8,7 +8,7 @@ interface Pt {
 // A small, quiet sparkline for cards.
 export function Sparkline({
   data,
-  color = "#c4633f",
+  color = "#c2603d",
   width = 120,
   height = 36,
 }: {
@@ -38,7 +38,7 @@ export function Sparkline({
         d={path}
         fill="none"
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -63,7 +63,7 @@ export function TrendChart({
   data,
   baseline,
   unit = "",
-  color = "#c4633f",
+  color = "#c2603d",
   height = 220,
   interactive = true,
 }: {
@@ -233,10 +233,10 @@ export function TrendChart({
               x2={plotR}
               y1={y(t)}
               y2={y(t)}
-              stroke="#e7dfd2"
+              stroke="#ece8dd"
               strokeWidth={1}
             />
-            <text x={8} y={y(t) + 4} fontSize={11} fill="#9a9082">
+            <text x={8} y={y(t) + 4} fontSize={11} fill="#908b7e">
               {Math.round(t)}
             </text>
           </g>
@@ -248,7 +248,7 @@ export function TrendChart({
           x2={plotR}
           y1={plotBottom}
           y2={plotBottom}
-          stroke="#e7dfd2"
+          stroke="#ece8dd"
           strokeWidth={1}
         />
         {xTicks.map((t, i) => (
@@ -258,14 +258,14 @@ export function TrendChart({
               x2={x(t.i)}
               y1={plotBottom}
               y2={plotBottom + 4}
-              stroke="#cfc4b3"
+              stroke="#bbb4a4"
               strokeWidth={1}
             />
             <text
               x={x(t.i)}
               y={plotBottom + 18}
               fontSize={11}
-              fill="#9a9082"
+              fill="#908b7e"
               textAnchor={t.anchor}
             >
               {t.label}
@@ -281,24 +281,24 @@ export function TrendChart({
               y={band.top}
               width={plotW}
               height={Math.max(0, band.bottom - band.top)}
-              fill="#6f8f6a"
-              opacity={0.1}
+              fill="#bbb4a4"
+              opacity={0.18}
             />
             <line
               x1={plotL}
               x2={plotR}
               y1={band.mid}
               y2={band.mid}
-              stroke="#6f8f6a"
-              strokeDasharray="4 4"
+              stroke="#bbb4a4"
+              strokeDasharray="4 5"
               strokeWidth={1}
-              opacity={0.5}
+              opacity={0.7}
             />
             <text
               x={plotR}
               y={band.top - 4}
               fontSize={11}
-              fill="#6f8f6a"
+              fill="#908b7e"
               textAnchor="end"
             >
               your normal
@@ -341,7 +341,7 @@ export function TrendChart({
               x={x(visible.length - 1)}
               y={y(values[values.length - 1]) - 10}
               fontSize={12}
-              fill="#2c2823"
+              fill="#23211d"
               textAnchor="end"
               fontWeight={600}
             >
@@ -359,10 +359,10 @@ export function TrendChart({
               x2={hx}
               y1={plotTop}
               y2={plotBottom}
-              stroke="#cfc4b3"
+              stroke="#bbb4a4"
               strokeWidth={1}
             />
-            <circle cx={hx} cy={hy} r={4.5} fill={color} stroke="#fdfbf7" strokeWidth={1.5} />
+            <circle cx={hx} cy={hy} r={4.5} fill={color} stroke="#ffffff" strokeWidth={1.5} />
             <g>
               <rect
                 x={tipX}
@@ -370,10 +370,10 @@ export function TrendChart({
                 width={tipW}
                 height={tipH}
                 rx={8}
-                fill="#2c2823"
+                fill="#23211d"
                 opacity={0.92}
               />
-              <text x={tipX + 10} y={tipY + 16} fontSize={11} fill="#cfc4b3">
+              <text x={tipX + 10} y={tipY + 16} fontSize={11} fill="#bbb4a4">
                 {fmtLong(hv.date)}
               </text>
               <text
@@ -381,7 +381,7 @@ export function TrendChart({
                 y={tipY + 32}
                 fontSize={14}
                 fontWeight={600}
-                fill="#fdfbf7"
+                fill="#ffffff"
               >
                 {hv.value}
                 {unit}

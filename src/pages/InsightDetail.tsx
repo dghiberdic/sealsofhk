@@ -1,21 +1,43 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import type { ReactNode } from "react";
+import type { ComponentType } from "react";
+import type { LucideProps } from "lucide-react";
 import { TrendChart } from "../components/charts";
 import { SignalNote, StatusPill, TierBadge } from "../components/ui";
+import {
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  HelpCircle,
+  Icon,
+  Lightbulb,
+} from "../components/icons";
 import { TIER_BLURB } from "../lib/types";
 import { baseline } from "../lib/analysis";
 import { useStore } from "../lib/store";
 import type { DayMetric } from "../lib/types";
 
 const statusColor: Record<string, string> = {
-  steady: "#6f8f6a",
-  watch: "#bd9a4e",
-  look: "#b04a32",
+  steady: "#5b7553",
+  watch: "#b0822f",
+  look: "#b5503f",
 };
 
-function QABlock({ q, children }: { q: string; children: React.ReactNode }) {
+function QABlock({
+  q,
+  icon,
+  children,
+}: {
+  q: string;
+  icon: ComponentType<LucideProps>;
+  children: ReactNode;
+}) {
   return (
-    <div className="border-t border-hair py-5 first:border-t-0 first:pt-0">
-      <h3 className="text-lg">{q}</h3>
+    <div>
+      <h3 className="flex items-center gap-2 text-xl">
+        <Icon icon={icon} size={18} className="text-clay-soft" />
+        {q}
+      </h3>
       <p className="mt-1.5 leading-relaxed text-muted">{children}</p>
     </div>
   );
@@ -31,8 +53,8 @@ export function InsightDetail() {
     return (
       <div>
         <p className="text-muted">We couldn't find that insight.</p>
-        <Link to="/health" className="link">
-          Back to your health
+        <Link to="/signals" className="link">
+          Back to your signals
         </Link>
       </div>
     );
@@ -51,14 +73,18 @@ export function InsightDetail() {
 
   return (
     <div className="max-w-readable">
-      <button onClick={() => nav(-1)} className="btn-quiet -ml-2 mb-4 text-sm">
-        ← Back
+      <button
+        onClick={() => nav(-1)}
+        className="-ml-2 mb-4 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium text-muted transition hover:text-ink"
+      >
+        <Icon icon={ArrowLeft} size={16} />
+        Back
       </button>
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill status={insight.status} />
         <TierBadge tier={insight.tier} />
-        <span className="pill bg-sand text-muted">
+        <span className="pill bg-ocean-tint text-ocean-deep">
           {insight.source === "blood"
             ? "From your blood work"
             : insight.source === "combined"
@@ -73,11 +99,12 @@ export function InsightDetail() {
       </p>
 
       {series && (
-        <div className="card mt-6 p-5">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-base text-muted">
-              Your trend{insight.metricUnit ? ` (${insight.metricUnit})` : ""}
-            </h3>
+        <div className="card mt-6 p-5 md:p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="eyebrow">
+              {insight.title}
+              {insight.metricUnit ? ` · ${insight.metricUnit}` : ""}
+            </span>
             <span className="text-xs text-faint">last 90 days</span>
           </div>
           <TrendChart
@@ -86,30 +113,44 @@ export function InsightDetail() {
             unit={insight.metricUnit ?? ""}
             color={statusColor[insight.status]}
           />
-          <p className="mt-2 text-sm text-faint">
-            The green band is <em>your</em> normal. What matters is the direction
-            of travel over weeks — not any single day. Hover for any day's value,
-            or drag across the chart to zoom in.
+          <p className="mt-3 text-sm text-faint">
+            The shaded band is <em>your</em> normal. What matters is the
+            direction of travel over weeks — not any single day. Hover for any
+            day's value, or drag across the chart to zoom in.
           </p>
         </div>
       )}
 
-      <div className="card mt-6 p-6">
-        <QABlock q="What is this?">{insight.what}</QABlock>
-        <QABlock q="What might it mean?">{insight.meaning}</QABlock>
-        <QABlock q="How sure are we?">
+      <div className="mt-8 flex flex-col gap-6">
+        <QABlock q="What is this?" icon={HelpCircle}>
+          {insight.what}
+        </QABlock>
+        <QABlock q="What might it mean?" icon={Lightbulb}>
+          {insight.meaning}
+        </QABlock>
+        <QABlock q="How sure are we?" icon={BarChart3}>
           {insight.sure}{" "}
           <span className="text-faint">— {TIER_BLURB[insight.tier]}</span>
         </QABlock>
-        <QABlock q="What should I do?">{insight.doThis}</QABlock>
+
+        {/* What to do — calm, reassuring sage panel. */}
+        <div className="rounded-card border border-sage-border bg-sage-tint p-5 md:p-6">
+          <h3 className="flex items-center gap-2 text-xl text-sage-deep">
+            <Icon icon={CheckCircle2} size={18} />
+            What should I do?
+          </h3>
+          <p className="mt-1.5 leading-relaxed text-sage-deep">
+            {insight.doThis}
+          </p>
+        </div>
       </div>
 
       {linkedQuestion && (
-        <div className="mt-6 rounded-2xl bg-clay-tint/60 p-5">
-          <h3 className="text-lg">A good thing to raise with your doctor</h3>
+        <div className="mt-6 rounded-card bg-clay-tint/60 p-5">
+          <h3 className="text-xl">A good thing to raise with your doctor</h3>
           <p className="mt-1 text-muted">“{linkedQuestion.text}”</p>
-          <Link to="/ask" className="btn-ghost mt-3">
-            See all your questions →
+          <Link to="/ask" className="btn-ghost btn-sm mt-3">
+            See all your questions
           </Link>
         </div>
       )}

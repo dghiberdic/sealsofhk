@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Check, Droplet, Icon, Watch } from "../components/icons";
 import { useStore } from "../lib/store";
 
 type Phase = "idle" | "importing" | "done";
@@ -45,7 +46,10 @@ export function Connect() {
 
         {/* Apple Health */}
         <div className="card mt-8 p-6">
-          <h2 className="text-xl"> Connect your Apple Watch & Health</h2>
+          <h2 className="flex items-center gap-2 text-xl">
+            <Icon icon={Watch} size={22} className="text-clay" />
+            Connect your Apple Watch & Health
+          </h2>
           <p className="mt-1 text-muted">
             We'll bring in your heart, sleep, activity, mobility and overnight
             vitals.
@@ -65,9 +69,10 @@ export function Connect() {
           )}
 
           {phase === "done" && (
-            <div className="mt-4 rounded-xl bg-sage-tint p-4 text-sage">
-              <p className="font-medium text-ink">
-                ✓ All set — we've brought in your last 90 days.
+            <div className="mt-4 rounded-input bg-sage-tint p-4 text-sage">
+              <p className="flex items-center gap-1.5 font-medium text-ink">
+                <Icon icon={Check} size={18} className="text-sage" />
+                All set — we've brought in your last 90 days.
               </p>
               <p className="mt-1 text-sm text-muted">
                 Heart, sleep, activity, mobility and overnight vitals are now in
@@ -83,7 +88,10 @@ export function Connect() {
 
         {/* Blood results */}
         <div className="card mt-5 p-6">
-          <h2 className="text-xl"> Add your blood results</h2>
+          <h2 className="flex items-center gap-2 text-xl">
+            <Icon icon={Droplet} size={22} className="text-clay" />
+            Add your blood results
+          </h2>
           <p className="mt-1 text-muted">
             This is where HeartSum goes beyond the watch — your watch can't
             measure cholesterol, blood sugar or inflammation.
@@ -96,9 +104,10 @@ export function Connect() {
               Upload a lab report
             </button>
           </div>
-          <div className="mt-4 rounded-xl bg-sand p-4">
-            <p className="font-medium text-ink">
-              ✓ We found {biomarkers.length} results from a recent lab report.
+          <div className="mt-4 rounded-input bg-sand p-4">
+            <p className="flex items-center gap-1.5 font-medium text-ink">
+              <Icon icon={Check} size={18} className="text-sage" />
+              We found {biomarkers.length} results from a recent lab report.
             </p>
             <p className="mt-1 text-sm text-muted">
               Please check these look right — we'll ask you to confirm before

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { TierBadge } from "../components/ui";
+import { TierPips } from "../components/ui";
+import { ArrowRight, Check, FilePlus2, Icon, Plus } from "../components/icons";
 import { useStore } from "../lib/store";
 import type { DoctorQuestion } from "../lib/types";
 
@@ -63,25 +64,27 @@ export function AskDoctor() {
                 aria-checked={on}
                 onClick={() => toggle(q.id)}
                 aria-label={`Include: ${q.text}`}
-                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition ${
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] border-[1.5px] transition ${
                   on
                     ? "border-clay bg-clay text-paper"
-                    : "border-hair bg-paper"
+                    : "border-hair-strong bg-paper"
                 }`}
               >
-                {on && "✓"}
+                {on && <Icon icon={Check} size={15} />}
               </button>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-ink">{q.text}</p>
+                <p className="text-lg font-medium leading-snug text-ink">
+                  {q.text}
+                </p>
                 <p className="mt-1 text-sm text-muted">{q.why}</p>
-                <div className="mt-2 flex items-center gap-2">
-                  {!q.custom && <TierBadge tier={q.tier} />}
+                <div className="mt-2 flex items-center gap-3">
+                  {!q.custom && <TierPips tier={q.tier} />}
                   {q.insightId && (
                     <Link
                       to={`/insight/${q.insightId}`}
-                      className="link text-sm"
+                      className="link inline-flex items-center gap-1 text-sm"
                     >
-                      see why →
+                      see why <Icon icon={ArrowRight} size={14} />
                     </Link>
                   )}
                   {q.custom && (
@@ -110,6 +113,7 @@ export function AskDoctor() {
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
           />
           <button className="btn-ghost" onClick={addCustom}>
+            <Icon icon={Plus} size={18} />
             Add
           </button>
         </div>
@@ -120,7 +124,8 @@ export function AskDoctor() {
           {checkedQ.length} of {questions.length} ready for your report.
         </p>
         <Link to="/report" className="btn-primary">
-          Build the report →
+          <Icon icon={FilePlus2} size={18} />
+          Build the report
         </Link>
       </div>
     </div>

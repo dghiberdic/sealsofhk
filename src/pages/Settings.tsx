@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Check, Download, Icon, Trash2 } from "../components/icons";
 import { useStore } from "../lib/store";
 
 function Toggle({
@@ -62,13 +63,19 @@ export function Settings() {
         <div className="mt-3 space-y-2 text-muted">
           <div className="flex items-center justify-between">
             <span>Apple Watch & Health</span>
-            <span className={watchConnected ? "text-sage" : "text-faint"}>
-              {watchConnected ? "✓ Connected" : "Not connected"}
+            <span
+              className={`inline-flex items-center gap-1.5 ${watchConnected ? "text-sage-deep" : "text-faint"}`}
+            >
+              {watchConnected && <Icon icon={Check} size={16} />}
+              {watchConnected ? "Connected" : "Not connected"}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span>Blood results</span>
-            <span className="text-sage">✓ {biomarkers.length} on file</span>
+            <span className="inline-flex items-center gap-1.5 text-sage-deep">
+              <Icon icon={Check} size={16} />
+              {biomarkers.length} on file
+            </span>
           </div>
         </div>
       </section>
@@ -106,8 +113,9 @@ export function Settings() {
           )}
         </div>
         {carerName && (
-          <p className="mt-3 text-sm text-sage">
-            ✓ {carerName} can currently view your dashboard.
+          <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-sage-deep">
+            <Icon icon={Check} size={16} />
+            {carerName} can currently view your dashboard.
           </p>
         )}
       </section>
@@ -129,6 +137,7 @@ export function Settings() {
         <h2 className="text-xl">Your data, your control</h2>
         <div className="mt-4 flex flex-wrap gap-3">
           <button className="btn-ghost" onClick={exportData}>
+            <Icon icon={Download} size={18} />
             Export everything
           </button>
           <button
@@ -144,6 +153,7 @@ export function Settings() {
               }
             }}
           >
+            <Icon icon={Trash2} size={18} />
             Delete all my data
           </button>
         </div>

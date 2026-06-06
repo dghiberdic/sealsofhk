@@ -1,8 +1,22 @@
+import type { ComponentType } from "react";
+import type { LucideProps } from "lucide-react";
 import { Link } from "react-router-dom";
-import { DishCard } from "../components/DishCard";
-import { SignalNote, statusMeta } from "../components/ui";
-import { baseline, recent, round, today } from "../lib/analysis";
+import { Eyebrow, SignalNote, StatusPill } from "../components/ui";
+import {
+  Activity,
+  ChevronRight,
+  Check,
+  Droplet,
+  Footprints,
+  Heart,
+  Icon,
+  Moon,
+  TrendingUp,
+  Wind,
+} from "../components/icons";
+import { baseline, round, today } from "../lib/analysis";
 import { useStore } from "../lib/store";
+import type { DayMetric } from "../lib/types";
 
 function greeting() {
   const h = new Date().getHours();
@@ -11,12 +25,103 @@ function greeting() {
   return "Good evening";
 }
 
-export function Today() {
-  const { profile, metrics, insights, overall, vo2 } = useStore();
-  const t = today(metrics);
+const dateLabel = () => {
+  const d = new Date();
+  const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
+  const day = d.toLocaleDateString("en-GB", { day: "numeric" });
+  const month = d.toLocaleDateString("en-GB", { month: "long" });
+  return `${weekday} · ${day} ${month}`;
+};
 
-  const flagged = insights.filter((i) => i.status !== "steady");
-  const steadyCount = insights.length - flagged.length;
+// The reassuring overall status, expressed with a calm icon chip.
+const overallChip = {
+  steady: { icon: Check, cls: "bg-sage-tint text-sage" },
+  watch: { icon: TrendingUp, cls: "bg-gold-tint text-gold" },
+  look: { icon: Heart, cls: "bg-brick-tint text-brick" },
+} as const;
+
+// Today's readings — only what's true *today* (last night + so far this morning),
+// each with a plain-language line on what it actually means. No long-term trends
+// or baselines here; those live under Signals and More info.
+interface Reading {
+  key: keyof DayMetric;
+  label: string;
+  icon: ComponentType<LucideProps>;
+  unit: string;
+  plain: string;
+  higherIsBetter: boolean;
+  fmt?: (v: number) => string;
+}
+
+const readings: Reading[] = [
+  {
+    key: "sleepScore",
+    label: "Last night's sleep",
+    icon: Moon,
+    unit: " / 100",
+    plain: "A blend of how long, how soundly and how steadily you slept.",
+    higherIsBetter: true,
+  },
+  {
+    key: "restingHR",
+    label: "Resting heart rate",
+    icon: Heart,
+    unit: " bpm",
+    plain: "Your heart's pace while you're completely at rest — a calm heart sits low here.",
+    higherIsBetter: false,
+  },
+  {
+    key: "hrv",
+    label: "Heart-rate variability",
+    icon: Activity,
+    unit: " ms",
+    plain: "The tiny timing gaps between beats. More variation usually means you're well rested.",
+    higherIsBetter: true,
+  },
+  {
+    key: "respiratoryRate",
+    label: "Breathing rate",
+    icon: Wind,
+    unit: " /min",
+    plain: "Your breaths per minute while you slept — reassuringly steady night to night.",
+    higherIsBetter: false,
+  },
+  {
+    key: "spo2",
+    label: "Blood oxygen",
+    icon: Droplet,
+    unit: "%",
+    plain: "How well your blood carried oxygen overnight. Anywhere in the high 90s is comfortable.",
+    higherIsBetter: true,
+  },
+  {
+    key: "steps",
+    label: "Movement today",
+    icon: Footprints,
+    unit: "",
+    plain: "How much you've been on your feet so far today.",
+    higherIsBetter: true,
+    fmt: (v) => v.toLocaleString("en-GB"),
+  },
+];
+
+// A gentle, words-only sense of how today sits against your own usual — never a
+// scary number, never a trend. Reassurance first.
+function vsUsual(now: number, base: number, higherIsBetter: boolean) {
+  const pct = base === 0 ? 0 : (now - base) / base;
+  if (Math.abs(pct) <= 0.06)
+    return { text: "Right around your usual", tone: "text-sage-deep" };
+  const higher = pct > 0;
+  const good = higher === higherIsBetter;
+  const dir = higher ? "higher" : "lower";
+  return good
+    ? { text: `A little ${dir} than usual — nicely so`, tone: "text-sage-deep" }
+    : { text: `A touch ${dir} than usual`, tone: "text-gold-deep" };
+}
+
+export function Today() {
+  const { profile, metrics, overall } = useStore();
+  const t = today(metrics);
 
   const headline =
     overall.level === "steady"
@@ -27,133 +132,81 @@ export function Today() {
 
   const sub =
     overall.level === "steady"
-      ? "Your heart, sleep and activity are all sitting comfortably in your normal range. Nothing to do — enjoy your morning tea. ☕"
-      : "Most of your signals are calm. Below are the few small plates worth a glance — none of them is an emergency.";
+      ? "I looked across your heart, sleep and activity this morning. Everything is sitting comfortably in your normal range — nothing to do today, enjoy your morning tea."
+      : "Most of your signals are calm. A few longer-term patterns are worth a glance — none of them is an emergency, and there's no rush. You'll find them under Signals.";
 
-  const keySignals = [
-    {
-      label: "Resting heart rate",
-      value: t.restingHR,
-      unit: "bpm",
-      base: round(baseline(metrics, "restingHR")),
-    },
-    {
-      label: "HRV",
-      value: t.hrv,
-      unit: "ms",
-      base: round(baseline(metrics, "hrv")),
-    },
-    {
-      label: "Sleep Score",
-      value: round(recent(metrics, "sleepScore")),
-      unit: "/100",
-      base: null,
-    },
-    {
-      label: "Cardio fitness",
-      value: vo2[vo2.length - 1].value,
-      unit: "",
-      base: null,
-    },
-  ];
+  const chip = overallChip[overall.level];
 
   return (
     <div>
-      <p className="text-muted">{greeting()},</p>
-      <h1 className="text-3xl md:text-4xl">{profile.name}</h1>
+      <Eyebrow>{dateLabel()}</Eyebrow>
+      <h1 className="mt-2 text-3xl md:text-4xl">
+        {greeting()}, {profile.name}
+      </h1>
 
-      {/* The reassuring status — the cart arrives */}
-      <div
-        className="card mt-6 overflow-hidden p-0"
-        style={{ borderColor: "transparent" }}
-      >
-        <div
-          className="p-6 md:p-8"
-          style={{
-            background:
-              overall.level === "steady"
-                ? "linear-gradient(135deg,#eef2ea,#f7f3ec)"
-                : "linear-gradient(135deg,#f5ece0,#f7f3ec)",
-          }}
+      {/* The reassuring status — how today is looking, overall */}
+      <div className="card mt-6 flex flex-wrap items-center gap-5 p-6 md:p-8">
+        <span
+          className={`grid h-16 w-16 shrink-0 place-items-center rounded-full ${chip.cls}`}
         >
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${statusMeta[overall.level].dot}`}
-            />
-            <span className={statusMeta[overall.level].text}>
-              {statusMeta[overall.level].label}
-            </span>
-          </div>
-          <h2 className="mt-3 text-2xl leading-snug md:text-3xl">{headline}</h2>
-          <p className="mt-3 max-w-readable leading-relaxed text-muted">{sub}</p>
+          <Icon icon={chip.icon} size={30} />
+        </span>
+        <div className="min-w-[240px] flex-1">
+          <h2 className="text-2xl leading-snug md:text-3xl">{headline}</h2>
+          <p className="mt-2 max-w-readable leading-relaxed text-muted">{sub}</p>
         </div>
+        <StatusPill status={overall.level} />
       </div>
 
-      {/* Key signals at a glance */}
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {keySignals.map((s) => (
-          <div key={s.label} className="card p-4">
-            <div className="text-sm text-muted">{s.label}</div>
-            <div className="mt-1 font-serif text-3xl">
-              {s.value}
-              <span className="ml-1 text-base text-faint">{s.unit}</span>
-            </div>
-            {s.base != null && (
-              <div className="mt-1 text-xs text-faint">
-                your normal ≈ {s.base}
-                {s.unit}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* The day's dishes worth noticing */}
-      <div className="mt-10 flex items-end justify-between">
-        <h2 className="text-2xl">
-          {flagged.length ? "Worth a glance today" : "Today's plates"}
-        </h2>
-        <Link to="/health" className="link text-sm">
-          See everything →
+      {overall.level !== "steady" && (
+        <Link
+          to="/signals"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-clay-deep hover:underline"
+        >
+          See the {overall.count === 1 ? "pattern" : "patterns"} worth a closer
+          look <Icon icon={ChevronRight} size={15} />
         </Link>
-      </div>
-      <p className="mt-1 text-muted">
-        {flagged.length
-          ? "A few small dishes to notice. Tap any one to understand it fully."
-          : "All calm. Here's your steady picture."}
-      </p>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        {(flagged.length ? flagged : insights.slice(0, 4)).map((i) => (
-          <DishCard key={i.id} insight={i} metrics={metrics} />
-        ))}
-      </div>
-
-      {flagged.length > 0 && (
-        <p className="mt-4 text-sm text-muted">
-          The other {steadyCount} areas we watch are sitting comfortably in your
-          normal range.
-        </p>
       )}
 
-      <div className="mt-10 flex flex-col gap-3 rounded-2xl bg-clay-tint/60 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-lg text-ink">Seeing your doctor soon?</h3>
-          <p className="text-sm text-muted">
-            Turn these signals into clear questions and a one-page report.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link to="/ask" className="btn-ghost">
-            Questions to ask
+      {/* Today's readings — only what's true today, in plain language */}
+      <div className="mt-10">
+        <Eyebrow>Today at a glance</Eyebrow>
+        <p className="mt-2 max-w-readable leading-relaxed text-muted">
+          Here's what your watch noticed overnight and so far today, with a plain
+          word on what each one means. These are just <em>today's</em> readings —
+          the bigger patterns over weeks live under{" "}
+          <Link to="/signals" className="link">
+            Signals
           </Link>
-          <Link to="/report" className="btn-primary">
-            Make a report
-          </Link>
-        </div>
+          .
+        </p>
       </div>
 
-      <SignalNote className="mt-8" />
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {readings.map((r) => {
+          const raw = Number(t[r.key]);
+          const u = vsUsual(raw, baseline(metrics, r.key), r.higherIsBetter);
+          const shown = r.fmt ? r.fmt(round(raw)) : round(raw);
+          return (
+            <div key={r.key} className="card p-5">
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ocean-tint text-ocean-deep">
+                  <Icon icon={r.icon} size={17} />
+                </span>
+                <div className="text-sm font-medium text-ink">{r.label}</div>
+              </div>
+              <div className="mt-3 font-serif text-3xl text-ink">
+                {shown}
+                <span className="ml-0.5 text-base text-faint">{r.unit}</span>
+              </div>
+              <p className={`mt-1 text-xs font-medium ${u.tone}`}>{u.text}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{r.plain}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <SignalNote className="mt-10" />
     </div>
   );
 }

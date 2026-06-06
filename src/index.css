@@ -12,52 +12,85 @@ html {
 }
 
 body {
-  @apply bg-cream text-ink font-sans antialiased;
-  font-size: 16px;
+  /* Warm ivory canvas, warm-charcoal ink, 17px humanist body. */
+  @apply bg-cream font-sans text-ink antialiased;
+  font-size: 1.0625rem; /* 17px */
+  line-height: 1.5;
 }
 
-/* Respect users who bump their browser font size — the layout stays calm. */
 @layer base {
+  /* Elegant serif for headlines & big numbers. */
   h1,
   h2,
   h3 {
-    @apply font-serif text-ink;
+    @apply font-serif font-semibold text-ink;
     letter-spacing: -0.01em;
+    line-height: 1.15;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-hair bg-paper shadow-soft;
+    @apply rounded-card border border-hair bg-paper shadow-soft;
   }
+
+  /* Pill buttons — generous tap targets; clay used once per view. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3
-      text-base font-medium transition focus:outline-none focus-visible:ring-2
-      focus-visible:ring-clay/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream;
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full
+      border border-transparent px-5 py-3 text-base font-semibold leading-none
+      transition active:translate-y-px;
   }
   .btn-primary {
     @apply btn bg-clay text-paper hover:bg-clay-deep;
   }
+  /* Secondary: white surface with a warm hairline. */
   .btn-ghost {
-    @apply btn border border-hair bg-paper text-ink hover:bg-cream;
+    @apply btn border-hair-strong bg-paper text-ink hover:border-faint hover:bg-surface-soft;
   }
+  /* Quiet/ghost text button. */
   .btn-quiet {
-    @apply btn text-muted hover:text-ink;
+    @apply btn bg-transparent text-ink hover:bg-sand;
   }
+  .btn-sm {
+    @apply min-h-[38px] px-4 py-2 text-sm;
+  }
+
+  /* Status / tier pills. */
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium;
+    @apply inline-flex items-center gap-2 rounded-full border border-transparent
+      px-3 py-1.5 text-sm font-semibold leading-none;
   }
+
+  /* Small uppercase eyebrow label, tracked. */
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-label text-faint;
+  }
+
+  /* The persistent "signals, not diagnoses" reassurance capsule. */
+  .reassure {
+    @apply inline-flex items-center gap-2.5 rounded-full border border-hair
+      bg-surface-soft px-4 py-2 text-sm leading-snug text-muted;
+  }
+
   .field-label {
-    @apply mb-1.5 block text-sm font-medium text-muted;
+    @apply mb-1.5 block text-sm font-semibold text-ink;
   }
   .field {
-    @apply w-full rounded-xl border border-hair bg-paper px-4 py-3 text-base text-ink
-      placeholder:text-faint focus:border-clay/60 focus:outline-none
-      focus:ring-2 focus:ring-clay/20;
+    @apply w-full rounded-input border-[1.5px] border-hair-strong bg-paper px-4 py-3
+      text-base text-ink placeholder:text-faint focus:border-clay focus:outline-none
+      focus:ring-[3px] focus:ring-clay/15;
+    min-height: 50px;
   }
   .link {
-    @apply text-clay-deep underline decoration-clay/30 underline-offset-2 hover:decoration-clay;
+    @apply font-medium text-clay-deep underline decoration-clay/30 underline-offset-2 hover:decoration-clay;
   }
+}
+
+/* Visible 3px clay focus ring — never removed. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid theme("colors.clay.DEFAULT");
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* Dark mode — warm and dim, not harsh black. */

@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { TrendChart } from "../components/charts";
-import { TierBadge } from "../components/ui";
+import { Brandmark, TierBadge } from "../components/ui";
+import {
+  Check,
+  Download,
+  Icon,
+  Info,
+  LinkIcon,
+} from "../components/icons";
 import { baseline, recent, round } from "../lib/analysis";
 import { useStore } from "../lib/store";
 import type { DayMetric, Insight } from "../lib/types";
@@ -82,16 +89,21 @@ export function Report({ shared = false }: { shared?: boolean }) {
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <button className="btn-primary" onClick={() => window.print()}>
+                <Icon icon={Download} size={18} />
                 Download / print as PDF
               </button>
               <button className="btn-ghost" onClick={makeLink}>
+                <Icon icon={LinkIcon} size={18} />
                 Create a shareable link
               </button>
             </div>
             {link && (
-              <div className="mt-3 rounded-xl bg-sage-tint/70 p-4 text-sm">
-                <p className="text-ink">
-                  {copied ? "✓ Link copied — " : ""}A secure, read-only link is
+              <div className="mt-3 rounded-input bg-sage-tint/70 p-4 text-sm">
+                <p className="flex items-center gap-1.5 text-ink">
+                  {copied && (
+                    <Icon icon={Check} size={16} className="text-sage" />
+                  )}
+                  {copied ? "Link copied — " : ""}A secure, read-only link is
                   ready:
                 </p>
                 <code className="mt-1 block break-all text-clay-deep">
@@ -115,15 +127,10 @@ export function Report({ shared = false }: { shared?: boolean }) {
         {/* The report sheet */}
         <article className="print-page card mx-auto max-w-3xl bg-paper p-8 md:p-10">
           {/* Header */}
-          <header className="border-b border-hair pb-5">
+          <header className="border-b-2 border-ink pb-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-clay text-paper">
-                  ♡
-                </span>
-                <span className="font-serif text-xl">HeartSum</span>
-              </div>
-              <span className="text-sm text-faint">Health summary</span>
+              <Brandmark size={28} />
+              <span className="eyebrow">Health summary</span>
             </div>
             <h2 className="mt-4 text-2xl">{profile.name}</h2>
             <p className="text-muted">
@@ -198,7 +205,7 @@ export function Report({ shared = false }: { shared?: boolean }) {
                 data={heartTrend}
                 baseline={baseline(metrics, "restingHR")}
                 unit=" bpm"
-                color="#b04a32"
+                color="#c2603d"
                 height={180}
                 interactive={false}
               />
@@ -261,14 +268,21 @@ export function Report({ shared = false }: { shared?: boolean }) {
 
           {/* Disclaimer */}
           <footer className="pt-5">
-            <p className="rounded-lg bg-brick-tint/50 p-3 text-sm leading-relaxed text-ink">
-              <strong>Please note.</strong> This is consumer wellness data from a
-              smartwatch plus self-entered lab results, provided to{" "}
-              <strong>support — not replace</strong> — your clinical judgement.
-              These are signals, not diagnoses. HeartSum does not recommend
-              starting, stopping or changing any treatment. Wearable metrics are
-              estimates and vary with fit, motion, skin and region.
-            </p>
+            <div className="flex gap-3 rounded-input border border-clay-border bg-clay-tint p-4">
+              <Icon
+                icon={Info}
+                size={20}
+                className="mt-0.5 shrink-0 text-clay"
+              />
+              <p className="text-sm leading-relaxed text-ink">
+                <strong>Please note.</strong> This is consumer wellness data from
+                a smartwatch plus self-entered lab results, provided to{" "}
+                <strong>support — not replace</strong> — your clinical judgement.
+                These are signals, not diagnoses. HeartSum does not recommend
+                starting, stopping or changing any treatment. Wearable metrics
+                are estimates and vary with fit, motion, skin and region.
+              </p>
+            </div>
           </footer>
         </article>
       </div>

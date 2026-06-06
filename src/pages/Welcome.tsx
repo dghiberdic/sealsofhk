@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import { Brandmark } from "../components/ui";
+import { ArrowRight, Icon } from "../components/icons";
 import { useStore } from "../lib/store";
 
 export function Welcome() {
@@ -8,16 +10,8 @@ export function Welcome() {
   return (
     <div className="min-h-screen bg-cream">
       <div className="mx-auto flex max-w-readable flex-col px-6 py-12 md:py-20">
-        <div className="mb-8 flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-clay text-2xl text-paper">
-            ♡
-          </span>
-          <div>
-            <div className="font-serif text-2xl">HeartSum</div>
-            <div className="text-sm text-faint">
-              Your health, served in small plates
-            </div>
-          </div>
+        <div className="mb-8">
+          <Brandmark size={48} tagline />
         </div>
 
         <h1 className="text-4xl leading-tight md:text-5xl">
@@ -74,7 +68,8 @@ export function Welcome() {
             nav("/today");
           }}
         >
-          Skip and explore with sample data →
+          Skip and explore with sample data
+          <Icon icon={ArrowRight} size={16} />
         </button>
       </div>
     </div>
