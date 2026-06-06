@@ -1,13 +1,22 @@
 import { useRef, useState } from "react";
 import { Check, FileText, Icon, Loader2, Sparkles } from "./icons";
 import { extractEHealthFromFile, type EHealthRecord } from "../lib/ehealth";
-import type { SupportedMediaType } from "../lib/extractLabs";
+import { applyExtraction, type SupportedMediaType } from "../lib/extractLabs";
+import { parseFhirBundle, type FhirParseResult } from "../lib/fhir";
 import { useStore } from "../lib/store";
 
 const KEY_STORE = "heartsum.anthropicKey";
-const ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
+// FHIR JSON is parsed locally; PDF/photo go to Claude.
+const ACCEPT = "application/json,.json,image/jpeg,image/png,image/webp,application/pdf";
 
-type Phase = "pick" | "ready" | "extracting" | "review" | "saved" | "error";
+type Phase =
+  | "pick"
+  | "docReady"
+  | "extracting"
+  | "docReview"
+  | "fhirReview"
+  | "saved"
+  | "error";
 
 interface Picked {
   name: string;
@@ -31,10 +40,13 @@ function readFile(file: File): Promise<Picked> {
   });
 }
 
-const uniq = (a: string[]) => Array.from(new Set(a.map((s) => s.trim()).filter(Boolean)));
+const uniq = (a: string[]) =>
+  Array.from(new Set(a.map((s) => s.trim()).filter(Boolean)));
+const isJson = (f: File) =>
+  f.type === "application/json" || f.name.toLowerCase().endsWith(".json");
 
 export function EHealthUpload() {
-  const { profile, set } = useStore();
+  const { profile, biomarkers, set } = useStore();
   const envKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
   const haveEnvKey = Boolean(envKey);
   const [apiKey, setApiKey] = useState(
@@ -43,15 +55,24 @@ export function EHealthUpload() {
   const [phase, setPhase] = useState<Phase>("pick");
   const [picked, setPicked] = useState<Picked | null>(null);
   const [rec, setRec] = useState<EHealthRecord | null>(null);
+  const [fhir, setFhir] = useState<FhirParseResult | null>(null);
+  const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
 
   const onPick = async (file: File | undefined) => {
     if (!file) return;
+    setError("");
+    setFileName(file.name);
     try {
-      setPicked(await readFile(file));
-      setError("");
-      setPhase("ready");
+      if (isJson(file)) {
+        // FHIR bundle — parse on-device, no key needed.
+        setFhir(parseFhirBundle(JSON.parse(await file.text())));
+        setPhase("fhirReview");
+      } else {
+        setPicked(await readFile(file));
+        setPhase("docReady");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't read that file.");
       setPhase("error");
@@ -64,21 +85,22 @@ export function EHealthUpload() {
     setError("");
     try {
       if (!haveEnvKey) localStorage.setItem(KEY_STORE, apiKey.trim());
-      const out = await extractEHealthFromFile({
-        apiKey: apiKey.trim(),
-        base64: picked.base64,
-        mediaType: picked.mediaType,
-        model: import.meta.env.VITE_ANTHROPIC_MODEL,
-      });
-      setRec(out);
-      setPhase("review");
+      setRec(
+        await extractEHealthFromFile({
+          apiKey: apiKey.trim(),
+          base64: picked.base64,
+          mediaType: picked.mediaType,
+          model: import.meta.env.VITE_ANTHROPIC_MODEL,
+        }),
+      );
+      setPhase("docReview");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Extraction failed.");
       setPhase("error");
     }
   };
 
-  const save = () => {
+  const saveDoc = () => {
     if (!rec) return;
     set({
       profile: {
@@ -90,6 +112,28 @@ export function EHealthUpload() {
         onBpMeds: profile.onBpMeds || rec.onBpMeds,
         smoker: rec.smoker ?? profile.smoker,
       },
+    });
+    setPhase("saved");
+  };
+
+  const saveFhir = () => {
+    if (!fhir) return;
+    const p = fhir.patch;
+    set({
+      profile: {
+        ...profile,
+        name: p.name || profile.name,
+        sex: p.sex ?? profile.sex,
+        conditions: uniq([...profile.conditions, ...p.conditions]),
+        medications: uniq([...profile.medications, ...p.medications]),
+        allergies: uniq([...profile.allergies, ...p.allergies]),
+        diabetes: profile.diabetes || p.diabetes,
+        onBpMeds: profile.onBpMeds || p.onBpMeds,
+      },
+      // A FHIR bundle can also carry lab/vital Observations — merge those in.
+      biomarkers: fhir.labs.length
+        ? applyExtraction(biomarkers, fhir.labs, fhir.collectionDate)
+        : biomarkers,
     });
     setPhase("saved");
   };
@@ -118,13 +162,19 @@ export function EHealthUpload() {
         Upload your eHealth / clinical record
       </h3>
       <p className="mt-1 text-sm text-muted">
-        A photo or PDF of your medical summary (conditions, medications,
-        allergies). Claude reads it; you confirm before it updates your profile.
+        A <strong>FHIR R4 bundle</strong> (<code className="text-clay-deep">.json</code>,
+        e.g. an eHealth / EHR export) is read on your device. A photo or PDF of a
+        medical summary is read by Claude. Either way, you confirm before
+        anything changes.
       </p>
 
-      {!haveEnvKey && (
+      {/* Key only matters for the photo/PDF path */}
+      {!haveEnvKey && phase !== "fhirReview" && (
         <div className="mt-4">
-          <label className="field-label">Your Anthropic API key</label>
+          <label className="field-label">
+            Anthropic API key{" "}
+            <span className="font-normal text-faint">(only for photo / PDF)</span>
+          </label>
           <input
             className="field font-mono text-sm"
             type="password"
@@ -133,10 +183,6 @@ export function EHealthUpload() {
             onChange={(e) => setApiKey(e.target.value)}
             autoComplete="off"
           />
-          <p className="mt-1.5 text-xs text-faint">
-            Sent directly from your browser to Anthropic. Stored only on this
-            device.
-          </p>
         </div>
       )}
 
@@ -151,13 +197,13 @@ export function EHealthUpload() {
       {(phase === "pick" || phase === "error") && (
         <button className="btn-ghost mt-4" onClick={() => fileInput.current?.click()}>
           <Icon icon={FileText} size={18} />
-          Choose a photo or PDF
+          Choose a FHIR bundle, photo, or PDF
         </button>
       )}
 
-      {picked && phase !== "pick" && (
+      {fileName && phase !== "pick" && phase !== "saved" && (
         <p className="mt-3 text-sm text-muted">
-          {picked.name} ·{" "}
+          {fileName} ·{" "}
           <button
             className="text-clay-deep hover:underline"
             onClick={() => fileInput.current?.click()}
@@ -167,7 +213,7 @@ export function EHealthUpload() {
         </p>
       )}
 
-      {phase === "ready" && (
+      {phase === "docReady" && (
         <button
           className="btn-primary mt-4 disabled:opacity-50"
           onClick={extract}
@@ -191,7 +237,7 @@ export function EHealthUpload() {
         </p>
       )}
 
-      {phase === "review" && rec && (
+      {phase === "docReview" && rec && (
         <div className="mt-4">
           <Row label="Conditions" items={rec.conditions} />
           <Row label="Medications" items={rec.medications} />
@@ -202,11 +248,38 @@ export function EHealthUpload() {
             {rec.smoker ? `Smoking: ${rec.smoker}.` : ""}
           </p>
           <div className="mt-3 flex flex-wrap gap-3">
-            <button className="btn-primary" onClick={save}>
+            <button className="btn-primary" onClick={saveDoc}>
               <Icon icon={Check} size={18} />
               Add to my profile
             </button>
-            <button className="btn-ghost" onClick={() => setPhase("ready")}>
+            <button className="btn-ghost" onClick={() => setPhase("docReady")}>
+              Try another file
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === "fhirReview" && fhir && (
+        <div className="mt-4">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
+            <Icon icon={Check} size={16} className="text-sage" />
+            Read a valid FHIR bundle{fhir.patch.name ? ` for ${fhir.patch.name}` : ""}.
+          </p>
+          <Row label="Conditions" items={fhir.patch.conditions} />
+          <Row label="Medications" items={fhir.patch.medications} />
+          <Row label="Allergies" items={fhir.patch.allergies} />
+          {fhir.labs.length > 0 && (
+            <Row
+              label="Lab & vital results"
+              items={fhir.labs.map((l) => `${l.name}: ${l.value} ${l.unit}`)}
+            />
+          )}
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button className="btn-primary" onClick={saveFhir}>
+              <Icon icon={Check} size={18} />
+              Add to my profile
+            </button>
+            <button className="btn-ghost" onClick={() => fileInput.current?.click()}>
               Try another file
             </button>
           </div>
