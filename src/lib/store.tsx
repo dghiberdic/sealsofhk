@@ -21,7 +21,14 @@ import {
 } from "./sampleData";
 import { framingham } from "./framingham";
 import { assessWatch } from "./rules";
-import type { Biomarker, DoctorQuestion, Profile } from "./types";
+import type {
+  Biomarker,
+  DayMetric,
+  DoctorQuestion,
+  EcgReading,
+  Profile,
+  RhythmEvent,
+} from "./types";
 
 const KEY = "heartsum.v1";
 
@@ -30,6 +37,12 @@ interface Persisted {
   watchConnected: boolean;
   profile: Profile;
   biomarkers: Biomarker[];
+  // Real uploaded Apple Health data. When null, the app falls back to the
+  // built-in sample series so screens still render before anything is imported.
+  uploadedMetrics: DayMetric[] | null;
+  uploadedEcg: EcgReading[] | null;
+  uploadedRhythm: RhythmEvent[] | null;
+  uploadedVo2: { date: string; value: number }[] | null;
   // checklist + custom questions live here
   checkedQ: string[];
   customQ: DoctorQuestion[];
@@ -42,6 +55,10 @@ const initial: Persisted = {
   watchConnected: false,
   profile: defaultProfile,
   biomarkers: sampleBiomarkers,
+  uploadedMetrics: null,
+  uploadedEcg: null,
+  uploadedRhythm: null,
+  uploadedVo2: null,
   checkedQ: [],
   customQ: [],
   dark: false,
@@ -93,11 +110,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", state.dark);
   }, [state.dark]);
 
-  // The watch series is simulated and stable for the demo.
-  const metrics = useMemo(() => generateMetrics(), []);
-  const vo2 = useMemo(() => generateVo2(), []);
-  const ecg = useMemo(() => generateEcg(), []);
-  const rhythmEvents = useMemo(() => generateRhythmEvents(), []);
+  // Use the user's uploaded Apple Health data once it exists; until then, fall
+  // back to the built-in sample series so the dashboard still renders.
+  const metrics = useMemo(
+    () => state.uploadedMetrics ?? generateMetrics(),
+    [state.uploadedMetrics],
+  );
+  const ecg = useMemo(
+    () => state.uploadedEcg ?? generateEcg(),
+    [state.uploadedEcg],
+  );
+  const rhythmEvents = useMemo(
+    () => state.uploadedRhythm ?? generateRhythmEvents(),
+    [state.uploadedRhythm],
+  );
+  // VO₂ max isn't in the basic export — if watch data was uploaded but no VO₂
+  // file came with it, there simply is no cardio-fitness reading (no fake data).
+  const vo2 = useMemo(
+    () =>
+      state.uploadedMetrics ? state.uploadedVo2 ?? [] : generateVo2(),
+    [state.uploadedMetrics, state.uploadedVo2],
+  );
 
   // Real, deterministic computations: Framingham CVD risk + watch trend rules.
   const fram = useMemo(

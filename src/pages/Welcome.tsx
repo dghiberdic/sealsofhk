@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Brandmark } from "../components/ui";
-import { ArrowRight, Icon } from "../components/icons";
 import { useStore } from "../lib/store";
 
 export function Welcome() {
@@ -60,17 +59,6 @@ export function Welcome() {
             I'm helping a family member set this up
           </button>
         </div>
-
-        <button
-          className="btn-quiet mt-4 self-center text-sm"
-          onClick={() => {
-            set({ onboarded: true, watchConnected: true });
-            nav("/today");
-          }}
-        >
-          Skip and explore with sample data
-          <Icon icon={ArrowRight} size={16} />
-        </button>
       </div>
     </div>
   );
