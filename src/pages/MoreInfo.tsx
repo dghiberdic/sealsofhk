@@ -112,6 +112,27 @@ const cantDo = [
   "Signals overlap. Illness, stress, overtraining and a hangover look nearly identical — context is yours to add.",
 ];
 
+// --- The watch alert rules (W1–W9) -----------------------------------------
+// These mirror the exact deterministic thresholds in src/lib/rules.ts — the
+// same rule IDs that appear on the doctor report. Each compares a recent window
+// against the person's own rolling baseline; nothing here is a diagnosis.
+type Sev = "yellow" | "red";
+const watchRules: { id: string; metric: string; trigger: string; sev: Sev }[] = [
+  { id: "W1", metric: "Resting heart rate", trigger: "More than 10% above your 30-day normal, holding for 5+ days", sev: "yellow" },
+  { id: "W2", metric: "Resting heart rate", trigger: "More than 20% above your 30-day normal, holding for 3+ days", sev: "red" },
+  { id: "W3", metric: "Heart-rate variability (HRV)", trigger: "More than 20% below your 30-day normal, for 5+ days", sev: "yellow" },
+  { id: "W4", metric: "Heart-rate variability (HRV)", trigger: "More than 35% below your 30-day normal, for 3+ days", sev: "red" },
+  { id: "W5", metric: "Blood oxygen (SpO₂)", trigger: "Below 93% on two or more readings", sev: "red" },
+  { id: "W6", metric: "ECG", trigger: "Any reading classified as atrial fibrillation", sev: "red" },
+  { id: "W7", metric: "Heart rhythm", trigger: "Any irregular-rhythm notification fired", sev: "yellow" },
+  { id: "W8", metric: "Daily steps", trigger: "More than 40% below your 14-day average, for 5+ days", sev: "yellow" },
+  { id: "W9", metric: "Walking heart rate", trigger: "More than 15% above your 30-day average", sev: "yellow" },
+];
+const sevStyle: Record<Sev, { cls: string; word: string }> = {
+  yellow: { cls: "bg-gold-tint text-gold-deep", word: "Yellow" },
+  red: { cls: "bg-brick-tint text-brick", word: "Red" },
+};
+
 function TierRow({ tier, text }: { tier: Tier; text: string }) {
   return (
     <div className="flex flex-col gap-2 border-t border-hair py-4 first:border-t-0 sm:flex-row sm:items-center">
@@ -240,6 +261,52 @@ export function MoreInfo() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* The watch alert rules ----------------------------------------- */}
+      <section className="card mt-5 p-6">
+        <h2 className="text-2xl">The watch alert rules</h2>
+        <p className="mt-1 max-w-readable text-muted">
+          When your dashboard turns yellow or red — and on the codes (W1–W9) you
+          see in the doctor report — it's one of these nine plain rules firing.
+          Each one watches a single signal and compares the last week or two
+          against <em>your own</em> 30-day normal, so a busy day never trips it.
+          A red rule turns the whole status red; a yellow one turns it yellow;
+          if none fire, you're green.
+        </p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-faint">
+                <th className="pb-2 pr-3 font-medium">Rule</th>
+                <th className="pb-2 pr-3 font-medium">What it watches</th>
+                <th className="pb-2 pr-3 font-medium">Fires when</th>
+                <th className="pb-2 font-medium">Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {watchRules.map((rule) => (
+                <tr key={rule.id} className="border-t border-hair align-top">
+                  <td className="py-2 pr-3 font-mono font-medium text-ink">
+                    {rule.id}
+                  </td>
+                  <td className="py-2 pr-3 text-ink">{rule.metric}</td>
+                  <td className="py-2 pr-3 text-muted">{rule.trigger}</td>
+                  <td className="py-2">
+                    <span className={`pill ${sevStyle[rule.sev].cls}`}>
+                      {sevStyle[rule.sev].word}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs text-faint">
+          These are wellness trend rules, not diagnoses. They tell you when a
+          number has drifted enough, for long enough, to be worth a doctor's
+          eye — never what's causing it.
+        </p>
       </section>
 
       {/* What this can't do -------------------------------------------- */}
