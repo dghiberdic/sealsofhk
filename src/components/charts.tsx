@@ -65,7 +65,7 @@ export function TrendChart({
   const padL = 44;
   const padR = 16;
   const padT = 16;
-  const padB = 28;
+  const padB = 40;
 
   const values = data.map((d) => d.value);
   const min = Math.min(...values);
@@ -95,6 +95,29 @@ export function TrendChart({
 
   const ticks = [lo + span * 0.15, lo + span * 0.5, hi - span * 0.15];
 
+  // x-axis timeline: a handful of evenly-spaced date labels
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+  const tickCount = Math.min(5, data.length);
+  const xTicks = Array.from({ length: tickCount }, (_, k) => {
+    const i =
+      tickCount === 1
+        ? 0
+        : Math.round((k / (tickCount - 1)) * (data.length - 1));
+    return {
+      i,
+      label: fmtDate(data[i].date),
+      anchor: (k === 0
+        ? "start"
+        : k === tickCount - 1
+          ? "end"
+          : "middle") as "start" | "end" | "middle",
+    };
+  });
+
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
@@ -122,6 +145,37 @@ export function TrendChart({
           />
           <text x={8} y={y(t) + 4} fontSize={11} fill="#9a9082">
             {Math.round(t)}
+          </text>
+        </g>
+      ))}
+
+      {/* x-axis timeline */}
+      <line
+        x1={padL}
+        x2={width - padR}
+        y1={height - padB}
+        y2={height - padB}
+        stroke="#e7dfd2"
+        strokeWidth={1}
+      />
+      {xTicks.map((t, i) => (
+        <g key={`x-${i}`}>
+          <line
+            x1={x(t.i)}
+            x2={x(t.i)}
+            y1={height - padB}
+            y2={height - padB + 4}
+            stroke="#cfc4b3"
+            strokeWidth={1}
+          />
+          <text
+            x={x(t.i)}
+            y={height - padB + 18}
+            fontSize={11}
+            fill="#9a9082"
+            textAnchor={t.anchor}
+          >
+            {t.label}
           </text>
         </g>
       ))}
