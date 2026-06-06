@@ -88,7 +88,8 @@ export function InsightDetail() {
           />
           <p className="mt-2 text-sm text-faint">
             The green band is <em>your</em> normal. What matters is the direction
-            of travel over weeks — not any single day.
+            of travel over weeks — not any single day. Hover for any day's value,
+            or drag across the chart to zoom in.
           </p>
         </div>
       )}

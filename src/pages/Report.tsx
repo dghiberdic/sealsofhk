@@ -200,6 +200,7 @@ export function Report({ shared = false }: { shared?: boolean }) {
                 unit=" bpm"
                 color="#b04a32"
                 height={180}
+                interactive={false}
               />
             </div>
             <p className="mt-1 text-sm text-faint">

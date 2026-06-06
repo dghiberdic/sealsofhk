@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Pt {
   date: string;
@@ -46,28 +46,66 @@ export function Sparkline({
   );
 }
 
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+const fmtLong = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+
 // A full, calm trend chart that emphasises the personal baseline band
-// and the direction of travel — not jagged daily noise.
+// and the direction of travel. Interactive: hover for the value at any date,
+// and drag across the chart to zoom into a date range.
 export function TrendChart({
   data,
   baseline,
   unit = "",
   color = "#c4633f",
   height = 220,
+  interactive = true,
 }: {
   data: Pt[];
   baseline?: number;
   unit?: string;
   color?: string;
   height?: number;
+  interactive?: boolean;
 }) {
   const width = 720;
   const padL = 44;
   const padR = 16;
   const padT = 16;
   const padB = 40;
+  const plotL = padL;
+  const plotR = width - padR;
+  const plotW = plotR - plotL;
+  const plotTop = padT;
+  const plotBottom = height - padB;
+  const plotH = plotBottom - plotTop;
 
-  const values = data.map((d) => d.value);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Zoom is a [start, end] window of absolute indices into `data`.
+  const [domain, setDomain] = useState<[number, number]>([0, data.length - 1]);
+  const [hover, setHover] = useState<number | null>(null); // index within visible
+  const [drag, setDrag] = useState<{ a: number; b: number } | null>(null);
+
+  // Reset the window if the underlying series changes length.
+  useEffect(() => {
+    setDomain([0, data.length - 1]);
+    setHover(null);
+    setDrag(null);
+  }, [data.length]);
+
+  const start = Math.max(0, Math.min(domain[0], data.length - 1));
+  const end = Math.max(start, Math.min(domain[1], data.length - 1));
+  const visible = data.slice(start, end + 1);
+  const zoomed = start > 0 || end < data.length - 1;
+
+  const values = visible.map((d) => d.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const lo = min - (max - min) * 0.15 - 0.5;
@@ -75,41 +113,30 @@ export function TrendChart({
   const span = hi - lo || 1;
 
   const x = (i: number) =>
-    padL + (i / (data.length - 1)) * (width - padL - padR);
-  const y = (v: number) =>
-    padT + (1 - (v - lo) / span) * (height - padT - padB);
+    plotL + (visible.length === 1 ? 0 : (i / (visible.length - 1)) * plotW);
+  const y = (v: number) => plotTop + (1 - (v - lo) / span) * plotH;
 
-  const linePath = data
+  const linePath = visible
     .map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(d.value).toFixed(1)}`)
     .join(" ");
-
   const areaPath =
     linePath +
-    ` L${x(data.length - 1).toFixed(1)},${(height - padB).toFixed(1)}` +
-    ` L${x(0).toFixed(1)},${(height - padB).toFixed(1)} Z`;
+    ` L${x(visible.length - 1).toFixed(1)},${plotBottom.toFixed(1)}` +
+    ` L${x(0).toFixed(1)},${plotBottom.toFixed(1)} Z`;
 
-  // a soft "your normal" band ±6% around baseline
   const band = baseline
     ? { top: y(baseline * 1.06), bottom: y(baseline * 0.94), mid: y(baseline) }
     : null;
 
-  const ticks = [lo + span * 0.15, lo + span * 0.5, hi - span * 0.15];
+  const yTicks = [lo + span * 0.15, lo + span * 0.5, hi - span * 0.15];
 
-  // x-axis timeline: a handful of evenly-spaced date labels
-  const fmtDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    });
-  const tickCount = Math.min(5, data.length);
+  const tickCount = Math.min(5, visible.length);
   const xTicks = Array.from({ length: tickCount }, (_, k) => {
     const i =
-      tickCount === 1
-        ? 0
-        : Math.round((k / (tickCount - 1)) * (data.length - 1));
+      tickCount === 1 ? 0 : Math.round((k / (tickCount - 1)) * (visible.length - 1));
     return {
       i,
-      label: fmtDate(data[i].date),
+      label: fmtDate(visible[i].date),
       anchor: (k === 0
         ? "start"
         : k === tickCount - 1
@@ -118,129 +145,267 @@ export function TrendChart({
     };
   });
 
+  // Map a pointer's clientX to the nearest visible data index.
+  const toIndex = (clientX: number) => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return 0;
+    const vbX = ((clientX - rect.left) / rect.width) * width;
+    const frac = (vbX - plotL) / plotW;
+    const idx = Math.round(frac * (visible.length - 1));
+    return Math.max(0, Math.min(visible.length - 1, idx));
+  };
+
+  const onDown = (e: React.PointerEvent) => {
+    if (!interactive) return;
+    const i = toIndex(e.clientX);
+    setDrag({ a: i, b: i });
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!interactive) return;
+    const i = toIndex(e.clientX);
+    setHover(i);
+    if (drag) setDrag({ ...drag, b: i });
+  };
+  const onUp = () => {
+    if (!interactive) return;
+    if (drag) {
+      const a = Math.min(drag.a, drag.b);
+      const b = Math.max(drag.a, drag.b);
+      if (b - a >= 2) setDomain([start + a, start + b]);
+      setDrag(null);
+    }
+  };
+  const onLeave = () => {
+    setHover(null);
+    setDrag(null);
+  };
+
+  // Tooltip geometry
+  const showTip = interactive && hover != null && !drag;
+  const hv = showTip ? visible[hover] : null;
+  const hx = showTip ? x(hover) : 0;
+  const hy = hv ? y(hv.value) : 0;
+  const tipW = 104;
+  const tipH = 40;
+  const tipX = Math.max(plotL, Math.min(plotR - tipW, hx - tipW / 2));
+  const tipAbove = hy > plotTop + tipH + 8;
+  const tipY = tipAbove ? hy - tipH - 10 : hy + 10;
+
+  // Live selection band while dragging
+  const sel =
+    drag && Math.abs(drag.a - drag.b) >= 1
+      ? { x1: x(Math.min(drag.a, drag.b)), x2: x(Math.max(drag.a, drag.b)) }
+      : null;
+
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full"
-      role="img"
-      aria-label="Trend over time"
-    >
-      <defs>
-        <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.16" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {/* y gridlines */}
-      {ticks.map((t, i) => (
-        <g key={i}>
-          <line
-            x1={padL}
-            x2={width - padR}
-            y1={y(t)}
-            y2={y(t)}
-            stroke="#e7dfd2"
-            strokeWidth={1}
-          />
-          <text x={8} y={y(t) + 4} fontSize={11} fill="#9a9082">
-            {Math.round(t)}
-          </text>
-        </g>
-      ))}
-
-      {/* x-axis timeline */}
-      <line
-        x1={padL}
-        x2={width - padR}
-        y1={height - padB}
-        y2={height - padB}
-        stroke="#e7dfd2"
-        strokeWidth={1}
-      />
-      {xTicks.map((t, i) => (
-        <g key={`x-${i}`}>
-          <line
-            x1={x(t.i)}
-            x2={x(t.i)}
-            y1={height - padB}
-            y2={height - padB + 4}
-            stroke="#cfc4b3"
-            strokeWidth={1}
-          />
-          <text
-            x={x(t.i)}
-            y={height - padB + 18}
-            fontSize={11}
-            fill="#9a9082"
-            textAnchor={t.anchor}
-          >
-            {t.label}
-          </text>
-        </g>
-      ))}
-
-      {/* your normal band */}
-      {band && (
-        <>
-          <rect
-            x={padL}
-            y={band.top}
-            width={width - padL - padR}
-            height={Math.max(0, band.bottom - band.top)}
-            fill="#6f8f6a"
-            opacity={0.1}
-          />
-          <line
-            x1={padL}
-            x2={width - padR}
-            y1={band.mid}
-            y2={band.mid}
-            stroke="#6f8f6a"
-            strokeDasharray="4 4"
-            strokeWidth={1}
-            opacity={0.5}
-          />
-          <text
-            x={width - padR}
-            y={band.top - 4}
-            fontSize={11}
-            fill="#6f8f6a"
-            textAnchor="end"
-          >
-            your normal
-          </text>
-        </>
+    <div className="relative">
+      {interactive && zoomed && (
+        <button
+          className="no-print absolute right-1 top-1 z-10 rounded-full border border-hair bg-paper/90 px-3 py-1 text-xs text-muted shadow-soft hover:text-ink"
+          onClick={() => {
+            setDomain([0, data.length - 1]);
+            setHover(null);
+          }}
+        >
+          Reset zoom
+        </button>
       )}
-
-      <path d={areaPath} fill="url(#fill)" />
-      <path
-        d={linePath}
-        fill="none"
-        stroke={color}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-
-      {/* last point */}
-      <circle
-        cx={x(data.length - 1)}
-        cy={y(values[values.length - 1])}
-        r={4}
-        fill={color}
-      />
-      <text
-        x={x(data.length - 1)}
-        y={y(values[values.length - 1]) - 10}
-        fontSize={12}
-        fill="#2c2823"
-        textAnchor="end"
-        fontWeight={600}
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full select-none"
+        role="img"
+        aria-label="Trend over time"
       >
-        {values[values.length - 1]}
-        {unit}
-      </text>
-    </svg>
+        <defs>
+          <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* y gridlines */}
+        {yTicks.map((t, i) => (
+          <g key={`y-${i}`}>
+            <line
+              x1={plotL}
+              x2={plotR}
+              y1={y(t)}
+              y2={y(t)}
+              stroke="#e7dfd2"
+              strokeWidth={1}
+            />
+            <text x={8} y={y(t) + 4} fontSize={11} fill="#9a9082">
+              {Math.round(t)}
+            </text>
+          </g>
+        ))}
+
+        {/* x-axis timeline */}
+        <line
+          x1={plotL}
+          x2={plotR}
+          y1={plotBottom}
+          y2={plotBottom}
+          stroke="#e7dfd2"
+          strokeWidth={1}
+        />
+        {xTicks.map((t, i) => (
+          <g key={`x-${i}`}>
+            <line
+              x1={x(t.i)}
+              x2={x(t.i)}
+              y1={plotBottom}
+              y2={plotBottom + 4}
+              stroke="#cfc4b3"
+              strokeWidth={1}
+            />
+            <text
+              x={x(t.i)}
+              y={plotBottom + 18}
+              fontSize={11}
+              fill="#9a9082"
+              textAnchor={t.anchor}
+            >
+              {t.label}
+            </text>
+          </g>
+        ))}
+
+        {/* your normal band */}
+        {band && (
+          <>
+            <rect
+              x={plotL}
+              y={band.top}
+              width={plotW}
+              height={Math.max(0, band.bottom - band.top)}
+              fill="#6f8f6a"
+              opacity={0.1}
+            />
+            <line
+              x1={plotL}
+              x2={plotR}
+              y1={band.mid}
+              y2={band.mid}
+              stroke="#6f8f6a"
+              strokeDasharray="4 4"
+              strokeWidth={1}
+              opacity={0.5}
+            />
+            <text
+              x={plotR}
+              y={band.top - 4}
+              fontSize={11}
+              fill="#6f8f6a"
+              textAnchor="end"
+            >
+              your normal
+            </text>
+          </>
+        )}
+
+        <path d={areaPath} fill="url(#fill)" />
+        <path
+          d={linePath}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* drag-to-zoom selection */}
+        {sel && (
+          <rect
+            x={sel.x1}
+            y={plotTop}
+            width={Math.max(0, sel.x2 - sel.x1)}
+            height={plotH}
+            fill={color}
+            opacity={0.12}
+          />
+        )}
+
+        {/* last point (hidden while hovering to avoid double dots) */}
+        {!showTip && (
+          <>
+            <circle
+              cx={x(visible.length - 1)}
+              cy={y(values[values.length - 1])}
+              r={4}
+              fill={color}
+            />
+            <text
+              x={x(visible.length - 1)}
+              y={y(values[values.length - 1]) - 10}
+              fontSize={12}
+              fill="#2c2823"
+              textAnchor="end"
+              fontWeight={600}
+            >
+              {values[values.length - 1]}
+              {unit}
+            </text>
+          </>
+        )}
+
+        {/* hover crosshair + tooltip */}
+        {showTip && hv && (
+          <g>
+            <line
+              x1={hx}
+              x2={hx}
+              y1={plotTop}
+              y2={plotBottom}
+              stroke="#cfc4b3"
+              strokeWidth={1}
+            />
+            <circle cx={hx} cy={hy} r={4.5} fill={color} stroke="#fdfbf7" strokeWidth={1.5} />
+            <g>
+              <rect
+                x={tipX}
+                y={tipY}
+                width={tipW}
+                height={tipH}
+                rx={8}
+                fill="#2c2823"
+                opacity={0.92}
+              />
+              <text x={tipX + 10} y={tipY + 16} fontSize={11} fill="#cfc4b3">
+                {fmtLong(hv.date)}
+              </text>
+              <text
+                x={tipX + 10}
+                y={tipY + 32}
+                fontSize={14}
+                fontWeight={600}
+                fill="#fdfbf7"
+              >
+                {hv.value}
+                {unit}
+              </text>
+            </g>
+          </g>
+        )}
+
+        {/* transparent capture layer for hover + drag-zoom */}
+        {interactive && (
+          <rect
+            x={plotL}
+            y={plotTop}
+            width={plotW}
+            height={plotH}
+            fill="transparent"
+            style={{ cursor: drag ? "col-resize" : "crosshair", touchAction: "none" }}
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerLeave={onLeave}
+          />
+        )}
+      </svg>
+    </div>
   );
 }

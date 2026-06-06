@@ -78,7 +78,11 @@ export function Trends() {
       <p className="mt-2 max-w-readable text-muted">
         The single best thing to watch is the <em>direction of travel</em> over
         weeks and months — not the noisy daily numbers. Your personal “normal”
-        is shown as a soft band so a one-off spike never looks frightening.
+        is shown as a soft band so a one-off spike never looks frightening.{" "}
+        <span className="text-faint">
+          Hover over the chart to see any day's value, or drag across it to zoom
+          in.
+        </span>
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
