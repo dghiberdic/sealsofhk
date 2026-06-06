@@ -346,9 +346,12 @@ export function Report({ shared = false }: { shared?: boolean }) {
               )}
             </div>
             <p className="mt-2 text-xs text-faint">
-              Source: Apple HealthKit export. VO₂ max ≈{" "}
-              {vo2[vo2.length - 1].value} mL/kg·min. Rules compare a recent
-              window against the patient's own 30-day baseline.
+              Source: Apple HealthKit export.
+              {vo2.length > 0
+                ? ` VO₂ max ≈ ${vo2[vo2.length - 1].value} mL/kg·min.`
+                : ""}{" "}
+              Rules compare a recent window against the patient's own 30-day
+              baseline.
             </p>
           </section>
 
