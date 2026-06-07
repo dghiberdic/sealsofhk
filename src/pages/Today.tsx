@@ -93,27 +93,17 @@ const ragMeta = {
 } as const;
 
 export function Today() {
-  const {
-    profile,
-    metrics,
-    overall,
-    watch,
-    carerName,
-    tgToken,
-    tgChatId,
-    tgAuto,
-    tgLastStatus,
-    set,
-  } = useStore();
+  const { profile, metrics, overall, watch, carerName, tgToken, tgChatId, tgLastStatus, set } =
+    useStore();
   const { t, lang } = useT();
   const td = today(metrics);
   const [notify, setNotify] = useState<{ ok?: boolean; msg: string } | null>(null);
   const tgReady = Boolean(tgToken.trim() && tgChatId.trim());
 
-  // Auto-notify the carer the moment the status crosses into yellow/red — once
-  // per transition (tgLastStatus dedupes; green resets it).
+  // Automatically alert the carer the moment the status is yellow/red — once
+  // per transition (tgLastStatus dedupes; green resets it so the next dip re-sends).
   useEffect(() => {
-    if (!tgAuto || !tgReady) return;
+    if (!tgReady) return;
     const st = watch.status;
     if ((st === "yellow" || st === "red") && st !== tgLastStatus) {
       void sendTelegram(tgToken, tgChatId, carerAlertText(profile.name, watch)).then(
@@ -123,14 +113,14 @@ export function Today() {
       set({ tgLastStatus: "green" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watch.status, tgAuto, tgReady, tgLastStatus]);
+  }, [watch.status, tgReady, tgLastStatus]);
 
-  const notifyCarer = async () => {
+  const resendCarer = async () => {
     setNotify({ msg: "…" });
     const r = await sendTelegram(tgToken, tgChatId, carerAlertText(profile.name, watch));
     setNotify({
       ok: r.ok,
-      msg: r.ok ? (lang === "zh" ? "已傳送 ✓" : "Sent ✓") : r.error ?? "",
+      msg: r.ok ? (lang === "zh" ? "已重新傳送 ✓" : "Resent ✓") : r.error ?? "",
     });
   };
 
@@ -191,13 +181,22 @@ export function Today() {
           <p className="mt-1 leading-relaxed text-muted">{watch.caretaker.en}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             {tgReady ? (
-              <button
-                className="inline-flex items-center gap-1.5 rounded-full border border-hair bg-paper px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-cream"
-                onClick={notifyCarer}
-              >
-                <Icon icon={MessagesSquare} size={16} className="text-clay" />
-                {lang === "zh" ? "用 Telegram 通知照顧者" : "Notify carer on Telegram"}
-              </button>
+              <>
+                {watch.status !== "green" && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+                    <Icon icon={MessagesSquare} size={14} className="text-clay" />
+                    {lang === "zh"
+                      ? "已透過 Telegram 自動通知照顧者"
+                      : "Carer auto-notified on Telegram"}
+                  </span>
+                )}
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full border border-hair bg-paper px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-cream"
+                  onClick={resendCarer}
+                >
+                  {lang === "zh" ? "重新傳送給照顧者" : "Resend to carer"}
+                </button>
+              </>
             ) : (
               <Link to="/settings" className="link text-sm">
                 {lang === "zh" ? "在設定中啟用 Telegram 提示" : "Set up Telegram alerts in Settings"}

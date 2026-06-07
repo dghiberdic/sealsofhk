@@ -53,9 +53,9 @@ interface Persisted {
   carerName: string | null;
   lang: Lang;
   // Telegram carer alerts (browser → Telegram Bot API). Token is a user secret.
+  // Alerts auto-send whenever the status is yellow/red and a token+chat are set.
   tgToken: string;
   tgChatId: string;
-  tgAuto: boolean; // auto-send when status crosses into yellow/red
   tgLastStatus: "green" | "yellow" | "red" | null; // dedupe so we don't re-send
 }
 
@@ -75,7 +75,6 @@ const initial: Persisted = {
   lang: "en",
   tgToken: DEFAULT_TG_TOKEN,
   tgChatId: DEFAULT_TG_CHAT_ID,
-  tgAuto: false,
   tgLastStatus: null,
 };
 

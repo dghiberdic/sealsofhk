@@ -43,7 +43,6 @@ export function Settings() {
     lang,
     tgToken,
     tgChatId,
-    tgAuto,
     watch,
     set,
     reset,
@@ -184,15 +183,7 @@ export function Settings() {
             />
           </div>
         </div>
-        <label className="mt-3 flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            className="h-5 w-5 accent-clay"
-            checked={tgAuto}
-            onChange={(e) => set({ tgAuto: e.target.checked })}
-          />
-          <span className="text-sm text-ink">{t("settings.tg.auto")}</span>
-        </label>
+        <p className="mt-3 text-sm text-muted">{t("settings.tg.auto")}</p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             className="btn-ghost disabled:opacity-50"

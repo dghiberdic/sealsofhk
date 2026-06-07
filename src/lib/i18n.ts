@@ -238,8 +238,8 @@ export const STR = {
   "settings.tg.token": { en: "Bot token", zh: "機械人權杖 (Bot token)" },
   "settings.tg.chatId": { en: "Carer's chat ID", zh: "照顧者的 chat ID" },
   "settings.tg.auto": {
-    en: "Auto-send when a yellow or red alert is detected",
-    zh: "偵測到黃色或紅色警示時自動傳送",
+    en: "Alerts are sent automatically whenever a yellow or red issue is detected. The button below sends one now.",
+    zh: "偵測到黃色或紅色問題時，提示會自動傳送。下方按鈕可立即傳送一次。",
   },
   "settings.tg.test": { en: "Send a test message", zh: "傳送測試訊息" },
   "settings.tg.sent": { en: "Sent ✓", zh: "已傳送 ✓" },
