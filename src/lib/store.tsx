@@ -20,6 +20,7 @@ import {
   sampleBiomarkers,
 } from "./sampleData";
 import { framingham } from "./framingham";
+import { cha2ds2vasc } from "./cha2ds2vasc";
 import { assessWatch } from "./rules";
 import type {
   Biomarker,
@@ -97,6 +98,7 @@ interface StoreValue extends Persisted {
   questions: DoctorQuestion[];
   overall: ReturnType<typeof overallStatus>;
   framingham: ReturnType<typeof framingham>;
+  cha: ReturnType<typeof cha2ds2vasc>;
   watch: ReturnType<typeof assessWatch>;
 }
 
@@ -144,6 +146,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => framingham(state.profile, state.biomarkers),
     [state.profile, state.biomarkers],
   );
+  const cha = useMemo(
+    () => cha2ds2vasc(state.profile, state.biomarkers, ecg),
+    [state.profile, state.biomarkers, ecg],
+  );
   const watch = useMemo(
     () => assessWatch(metrics, ecg, rhythmEvents, state.profile.name),
     [metrics, ecg, rhythmEvents, state.profile.name],
@@ -174,6 +180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     questions,
     overall,
     framingham: fram,
+    cha,
     watch,
   };
 

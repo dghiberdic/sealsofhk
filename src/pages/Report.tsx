@@ -52,7 +52,7 @@ function H({ zh, en }: { zh: string; en: string }) {
 }
 
 export function Report({ shared = false }: { shared?: boolean }) {
-  const { profile, metrics, biomarkers, questions, checkedQ, vo2, framingham, watch } =
+  const { profile, metrics, biomarkers, questions, checkedQ, vo2, framingham, cha, watch } =
     useStore();
   const { t } = useT();
   const [link, setLink] = useState<string | null>(null);
@@ -223,6 +223,39 @@ export function Report({ shared = false }: { shared?: boolean }) {
                 {framingham.reason ?? "資料不足，無法計算。Not enough data to compute."}
               </p>
             )}
+          </section>
+
+          {/* CHA₂DS₂-VASc stroke-risk score */}
+          <section className="border-b border-hair py-5">
+            <H zh="中風風險評分 (CHA₂DS₂-VASc)" en="Stroke-risk score (CHA₂DS₂-VASc)" />
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="font-serif text-4xl text-ink">{cha.score}<span className="text-2xl text-faint">/9</span></span>
+              <span className={`pill ${(cha.band === "high" ? rag.red : cha.band === "moderate" ? rag.yellow : rag.green).cls}`}>
+                <span className={`h-2 w-2 rounded-full ${(cha.band === "high" ? rag.red : cha.band === "moderate" ? rag.yellow : rag.green).dot}`} />
+                約 {cha.annualStrokePct}% 年中風風險 / ~{cha.annualStrokePct}%/yr stroke risk
+              </span>
+            </div>
+            <table className="mt-3 w-full max-w-md text-sm">
+              <tbody>
+                {cha.components.map((c) => (
+                  <tr key={c.key} className="border-t border-hair">
+                    <td className="py-1 pr-2 font-mono text-faint">{c.key}</td>
+                    <td className="py-1 pr-2 text-ink">
+                      {c.labelZh}
+                      <span className="ml-1 text-faint">{c.labelEn}</span>
+                    </td>
+                    <td className={`py-1 text-right font-medium ${c.points > 0 ? "text-ink" : "text-faint"}`}>
+                      +{c.points}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2 text-xs text-faint">
+              {cha.afibPresent
+                ? "已偵測到心房顫動 — 此評分在此情況下直接適用，可協助評估抗凝治療。 · Atrial fibrillation detected — this score applies directly and informs anticoagulation."
+                : "CHA₂DS₂-VASc 主要用於已有心房顫動的病人；此處作背景參考。 · CHA₂DS₂-VASc applies mainly when atrial fibrillation is present; shown here as context."}
+            </p>
           </section>
 
           {/* Blood biomarkers */}
