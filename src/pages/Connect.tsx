@@ -4,33 +4,32 @@ import { Droplet, FileText, Icon, Watch } from "../components/icons";
 import { LabPhotoUpload } from "../components/LabPhotoUpload";
 import { WatchUpload } from "../components/WatchUpload";
 import { EHealthUpload } from "../components/EHealthUpload";
+import { useT } from "../lib/i18n";
 import { useStore } from "../lib/store";
 
 export function Connect() {
   const nav = useNavigate();
   const { set } = useStore();
+  const { t } = useT();
   const [showLab, setShowLab] = useState(false);
 
   return (
     <div className="min-h-screen bg-cream">
       <div className="mx-auto max-w-readable px-6 py-12">
-        <p className="text-sm font-medium text-clay-deep">Step 2 of 2</p>
-        <h1 className="mt-1 text-3xl">Bring in your data</h1>
+        <p className="text-sm font-medium text-clay-deep">{t("connect.step")}</p>
+        <h1 className="mt-1 text-3xl">{t("connect.h1")}</h1>
         <p className="mt-2 text-muted">
-          Upload what you have — each piece makes the picture richer. It's all
-          optional, and you can add more any time.
+          {t("connect.intro")}
         </p>
 
         {/* Apple Health */}
         <div className="card mt-8 p-6">
           <h2 className="flex items-center gap-2 text-xl">
             <Icon icon={Watch} size={22} className="text-clay" />
-            Connect your Apple Watch & Health
+            {t("connect.watchTitle")}
           </h2>
           <p className="mt-1 text-muted">
-            Export your health data and upload the watch CSVs — resting &amp;
-            walking heart rate, HRV, blood oxygen, ECG, steps. They're read on
-            your device and become your trends and alerts.
+            {t("connect.watchBody")}
           </p>
           <WatchUpload />
         </div>
@@ -39,17 +38,16 @@ export function Connect() {
         <div className="card mt-5 p-6">
           <h2 className="flex items-center gap-2 text-xl">
             <Icon icon={Droplet} size={22} className="text-clay" />
-            Add your blood results
+            {t("connect.bloodTitle")}
           </h2>
           <p className="mt-1 text-muted">
-            This is where HeartSum goes beyond the watch — your watch can't
-            measure cholesterol, blood sugar or inflammation.
+            {t("connect.bloodBody")}
           </p>
           <button
             className="btn-ghost mt-4"
             onClick={() => setShowLab((s) => !s)}
           >
-            Photograph a lab report
+            {t("connect.bloodBtn")}
           </button>
           {showLab && <LabPhotoUpload onClose={() => setShowLab(false)} />}
         </div>
@@ -58,12 +56,10 @@ export function Connect() {
         <div className="card mt-5 p-6">
           <h2 className="flex items-center gap-2 text-xl">
             <Icon icon={FileText} size={22} className="text-clay" />
-            Link your eHealth record
+            {t("connect.ehealthTitle")}
           </h2>
           <p className="mt-1 text-muted">
-            Your conditions, medications and allergies. In production this comes
-            from Hong Kong's eHealth record (eHRSS, Cap. 625) with your consent;
-            for now, upload your medical summary and Claude reads it in.
+            {t("connect.ehealthBody")}
           </p>
           <EHealthUpload />
         </div>
@@ -76,7 +72,7 @@ export function Connect() {
               nav("/today");
             }}
           >
-            Go to my dashboard
+            {t("connect.go")}
           </button>
         </div>
       </div>

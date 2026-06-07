@@ -52,13 +52,16 @@ export function buildInsights(
       high: "look",
     };
     const catWord = { low: "low", moderate: "moderate", high: "high" } as const;
+    const catWordZh = { low: "低", moderate: "中等", high: "高" } as const;
     list.push({
       id: "cvd-risk",
       title: "10-year heart-risk estimate",
+      titleZh: "十年心臟風險估算",
       focus: "heart",
       tier: 2,
       status: catStatus[fram.category!],
       oneLine: `Your estimated chance of a cardiovascular event in the next 10 years is about ${fram.riskPct}% — that's in the ${catWord[fram.category!]} band.`,
+      oneLineZh: `你未來十年發生心血管事件的估計機會約為 ${fram.riskPct}%——屬於${catWordZh[fram.category!]}風險。`,
       what: "This is the Framingham General CVD Risk score — a long-established formula that combines your age, sex, cholesterol, blood pressure, smoking and diabetes into a single 10-year estimate.",
       meaning:
         fram.category === "low"
@@ -95,6 +98,7 @@ export function buildInsights(
     list.push({
       id: "hypertension",
       title: "Blood pressure",
+      titleZh: "血壓",
       focus: "heart",
       tier: 1,
       status: bpStatus,
@@ -104,6 +108,12 @@ export function buildInsights(
           : bpStatus === "watch"
             ? `Your blood pressure is ${reading} — a little above ${treated ? "target while on treatment" : "the ideal range"}.`
             : `Your blood pressure is ${reading} — in the high range.`,
+      oneLineZh:
+        bpStatus === "steady"
+          ? `你的血壓為 ${reading}——處於理想範圍。`
+          : bpStatus === "watch"
+            ? `你的血壓為 ${reading}——略高於${treated ? "服藥後的目標" : "理想範圍"}。`
+            : `你的血壓為 ${reading}——處於偏高範圍。`,
       what: "Blood pressure is the force of blood against your artery walls, read from a cuff. The watch can flag a 30-day vascular pattern, but only a cuff gives an actual number.",
       meaning:
         bpStatus === "steady"
@@ -130,13 +140,21 @@ export function buildInsights(
       aboveAverage: "in the healthy range",
       high: "above typical — excellent",
     };
+    const tierWordZh: Record<Vo2Tier, string> = {
+      low: "偏低",
+      belowAverage: "略低於一般",
+      aboveAverage: "在健康範圍內",
+      high: "高於一般——非常好",
+    };
     list.push({
       id: "vo2",
       title: "Cardio fitness (VO₂ max)",
+      titleZh: "心肺適能 (VO₂ max)",
       focus: "heart",
       tier: 1,
       status: vo2Status,
       oneLine: `Your cardio fitness is about ${vo2now} mL/kg·min — ${tierWord[tier]} for your age and sex.`,
+      oneLineZh: `你的心肺適能約為 ${vo2now} mL/kg·min——以你的年齡和性別而言${tierWordZh[tier]}。`,
       what: "Cardio fitness (VO₂ max) is an estimate of how much oxygen your body can use when working hard. It's one of the strongest single predictors of long-term health.",
       meaning: low
         ? "A reading on the low side is linked to higher cardiovascular risk over time — but it's also one of the most changeable numbers you have."
@@ -157,12 +175,16 @@ export function buildInsights(
     list.push({
       id: "cv-trend",
       title: "Resting heart rate & HRV trend",
+      titleZh: "靜止心率及心率變異趨勢",
       focus: "heart",
       tier: 2,
       status: "watch",
       oneLine: `Your resting heart rate has drifted up (about ${round(
         rhr.base,
       )} → ${round(rhr.now)} bpm) while HRV has eased down.`,
+      oneLineZh: `你的靜止心率有上升趨勢（約 ${round(rhr.base)} → ${round(
+        rhr.now,
+      )} bpm），同時心率變異下降。`,
       what: "Resting heart rate is your heart at complete rest. HRV is the tiny beat-to-beat timing variation that reflects recovery. Read together over weeks, they hint at how your cardiovascular system is doing.",
       meaning:
         "A slow rise in resting heart rate alongside a falling HRV can point toward deconditioning or general cardiovascular strain — but it can equally come from a stretch of stress, poor sleep, or less activity.",
@@ -186,6 +208,7 @@ export function buildInsights(
     list.push({
       id: "lipids",
       title: "Cholesterol (lipid panel)",
+      titleZh: "膽固醇（血脂）",
       focus: "heart",
       tier: 2,
       status: high ? "look" : "steady",
@@ -194,6 +217,11 @@ export function buildInsights(
             apob && apob.value ? `, and ApoB is ${apob.value} ${apob.unit}` : ""
           }.`
         : "Your cholesterol looks to be in a reasonable range.",
+      oneLineZh: high
+        ? `你的低密度膽固醇（壞膽固醇）為 ${ldl.value} ${ldl.unit}，高於常用指引範圍${
+            apob && apob.value ? `，載脂蛋白 B 為 ${apob.value} ${apob.unit}` : ""
+          }。`
+        : "你的膽固醇看來在合理範圍。",
       what: "These are blood-test numbers (your watch can't measure them). LDL is the cholesterol that builds up in artery walls; ApoB counts the particles most linked to artery risk.",
       meaning: high
         ? `Higher LDL/ApoB is a well-established heart-risk lever${
@@ -217,12 +245,16 @@ export function buildInsights(
     list.push({
       id: "glucose",
       title: "Blood sugar (HbA1c)",
+      titleZh: "血糖 (HbA1c)",
       focus: "metabolic",
       tier: 2,
       status: high ? "watch" : "steady",
       oneLine: high
         ? `Your HbA1c is ${hba1c.value}%, just into the “keep an eye on it” range.`
         : "Your blood sugar looks steady.",
+      oneLineZh: high
+        ? `你的糖化血紅素為 ${hba1c.value}%，剛進入「需要留意」的範圍。`
+        : "你的血糖看來平穩。",
       what: "HbA1c is your average blood sugar over about three months — a blood test, not a watch reading. Your watch genuinely can't measure blood sugar at all.",
       meaning: high
         ? "A reading a little above the usual band can be an early, very modifiable sign worth watching — often it never progresses, especially with activity and diet."
@@ -239,10 +271,12 @@ export function buildInsights(
   list.push({
     id: "metabolic-watch-hint",
     title: "Metabolic hints from the watch",
+    titleZh: "手錶的代謝提示",
     focus: "metabolic",
     tier: 3,
     status: "steady",
     oneLine: "Your watch can only hint at metabolic health — your blood work tells the real story.",
+    oneLineZh: "手錶只能間接提示代謝健康——你的驗血才是真正的依據。",
     what: "Low HRV, a higher resting heart rate, low fitness and poor sleep can loosely track with metabolic health.",
     meaning:
       "These are indirect correlates only. The watch does not measure blood glucose, so treat anything here as a faint hint, not a finding.",
@@ -264,6 +298,7 @@ export function buildInsights(
     list.push({
       id: "apnea",
       title: "Breathing during sleep",
+      titleZh: "睡眠時的呼吸",
       focus: "secondary",
       tier: 1,
       status: apneaPattern ? "watch" : "steady",
@@ -272,6 +307,11 @@ export function buildInsights(
         : elevatedNights >= 10
           ? `Breathing disturbances were elevated on ${elevatedNights} of the last 30 nights.`
           : "Your overnight blood oxygen dipped below its usual range on a few nights.",
+      oneLineZh: !apneaPattern
+        ? "睡眠時的呼吸沒有令人擔心的中斷模式。"
+        : elevatedNights >= 10
+          ? `過去 30 晚中有 ${elevatedNights} 晚呼吸中斷指數偏高。`
+          : "你過夜的血氧在數晚低於平常範圍。",
       what: "The watch tracks interruptions in your breathing during sleep (the Breathing-Disturbances index) — the basis for its sleep-apnea notification.",
       meaning: apneaPattern
         ? "A 30-day pattern of disturbances can suggest sleep apnea, which is very treatable."
@@ -295,12 +335,16 @@ export function buildInsights(
     list.push({
       id: "sleep",
       title: "Sleep quality",
+      titleZh: "睡眠質素",
       focus: "secondary",
       tier: 2,
       status: sleepLow ? "watch" : "steady",
       oneLine: `Your Sleep Score is averaging about ${round(sleepNow)} out of 100 lately${
         sleepLow ? ` — below your own usual of ${round(sleepBase)}` : ""
       }.`,
+      oneLineZh: `你最近的睡眠評分平均約為 ${round(sleepNow)} 分（100 分滿分）${
+        sleepLow ? `——低於你平常的 ${round(sleepBase)} 分` : ""
+      }。`,
       what: "The Sleep Score blends how long you sleep (the biggest lever), how consistent your bedtime is, and how often you wake.",
       meaning:
         "Steady, good sleep supports almost everything else — recovery, mood, heart and metabolic health.",
@@ -324,6 +368,7 @@ export function buildInsights(
     list.push({
       id: "illness",
       title: "Are you fighting something?",
+      titleZh: "身體是否在對抗甚麼？",
       focus: "secondary",
       tier: 2,
       status: clusterCount >= 2 ? "watch" : "steady",
@@ -331,6 +376,10 @@ export function buildInsights(
         clusterCount >= 2
           ? "A few overnight signals drifted together — your body may be working on something."
           : "No sign your body is fighting anything off.",
+      oneLineZh:
+        clusterCount >= 2
+          ? "過夜有幾項訊號一起偏移——你的身體可能正在處理甚麼。"
+          : "沒有跡象顯示你的身體正在對抗甚麼。",
       what: "When resting heart rate, breathing rate and wrist temperature rise together overnight while HRV dips, it often means your body is busy — an infection coming on, or just a hard night or a drink.",
       meaning:
         "This is the classic “two or more Vitals outliers in one night” pattern. One signal alone is usually nothing; several together is more telling.",
@@ -358,6 +407,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-cvd",
           text: "Go over my 10-year heart-risk estimate",
+          textZh: "與醫生檢視我的十年心臟風險估算",
           why: "My Framingham CVD risk came out in the moderate-to-high band — I'd like to understand which levers matter most for me.",
           tier: 2,
           insightId: "cvd-risk",
@@ -368,6 +418,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-bp",
           text: "Confirm my blood pressure with a cuff",
+          textZh: "用血壓計確認我的血壓",
           why: "My watch flagged a 30-day pattern that can suggest higher blood pressure, but it can't give an actual reading.",
           tier: 1,
           insightId: "hypertension",
@@ -378,6 +429,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-vo2",
           text: "Discuss my low cardio fitness (VO₂ max)",
+          textZh: "討論我偏低的心肺適能 (VO₂ max)",
           why: "It's sitting at the low end for my age, which links to cardiovascular risk — and I'd like to know how best to improve it.",
           tier: 1,
           insightId: "vo2",
@@ -388,6 +440,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-cv",
           text: "Mention my resting heart rate has trended up over weeks",
+          textZh: "提及我的靜止心率近數週有上升趨勢",
           why: "It's drifted up while my HRV eased down — a trend worth a second opinion.",
           tier: 2,
           insightId: "cv-trend",
@@ -398,6 +451,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-lipids",
           text: "Review my cholesterol given my family history",
+          textZh: "考慮我的家族病史，覆檢我的膽固醇",
           why: "My LDL/ApoB are above the usual guidance band, and there's heart disease in my family.",
           tier: 2,
           insightId: "lipids",
@@ -408,6 +462,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-glucose",
           text: "Talk about my HbA1c (blood sugar)",
+          textZh: "談談我的糖化血紅素（血糖）",
           why: "It's just above the usual range — I'd like to know if anything's worth doing now.",
           tier: 2,
           insightId: "glucose",
@@ -418,6 +473,7 @@ export function buildQuestions(insights: Insight[]): DoctorQuestion[] {
         add({
           id: "q-apnea",
           text: "Ask about a sleep study",
+          textZh: "詢問是否需要做睡眠測試",
           why: "My watch noticed a pattern of breathing disturbances overnight.",
           tier: 1,
           insightId: "apnea",

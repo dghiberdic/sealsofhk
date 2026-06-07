@@ -26,6 +26,7 @@ import type {
   DayMetric,
   DoctorQuestion,
   EcgReading,
+  Lang,
   Profile,
   RhythmEvent,
 } from "./types";
@@ -48,6 +49,7 @@ interface Persisted {
   customQ: DoctorQuestion[];
   dark: boolean;
   carerName: string | null;
+  lang: Lang;
 }
 
 const initial: Persisted = {
@@ -63,6 +65,7 @@ const initial: Persisted = {
   customQ: [],
   dark: false,
   carerName: null,
+  lang: "en",
 };
 
 function load(): Persisted {
@@ -109,6 +112,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle("dark", state.dark);
   }, [state.dark]);
+
+  useEffect(() => {
+    document.documentElement.lang = state.lang === "zh" ? "zh-Hant" : "en";
+  }, [state.lang]);
 
   // Use the user's uploaded Apple Health data once it exists; until then, fall
   // back to the built-in sample series so the dashboard still renders.

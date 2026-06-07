@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { DayMetric, Insight, Status } from "../lib/types";
+import { useT } from "../lib/i18n";
 import { Sparkline } from "./charts";
 import { StatusPill, TierPips } from "./ui";
 import { Activity, Flame, Heart, Icon } from "./icons";
@@ -33,6 +34,10 @@ export function DishCard({
   insight: Insight;
   metrics: DayMetric[];
 }) {
+  const { lang } = useT();
+  const title = lang === "zh" ? insight.titleZh ?? insight.title : insight.title;
+  const oneLine =
+    lang === "zh" ? insight.oneLineZh ?? insight.oneLine : insight.oneLine;
   const series =
     insight.metric != null
       ? metrics.slice(-30).map((m) => Number(m[insight.metric as keyof DayMetric]))
@@ -50,11 +55,11 @@ export function DishCard({
           >
             <Icon icon={focusIcon[insight.focus]} size={20} />
           </span>
-          <h3 className="font-serif text-xl leading-tight">{insight.title}</h3>
+          <h3 className="font-serif text-xl leading-tight">{title}</h3>
         </div>
         <StatusPill status={insight.status} />
       </div>
-      <p className="mt-3 leading-relaxed text-muted">{insight.oneLine}</p>
+      <p className="mt-3 leading-relaxed text-muted">{oneLine}</p>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <TierPips tier={insight.tier} />
         {series && (

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { TierPips } from "../components/ui";
 import { ArrowRight, Check, FilePlus2, Icon, Plus } from "../components/icons";
+import { useT } from "../lib/i18n";
 import { useStore } from "../lib/store";
 import type { DoctorQuestion } from "../lib/types";
 
 export function AskDoctor() {
   const { questions, checkedQ, customQ, set } = useStore();
+  const { t, lang } = useT();
   const [draft, setDraft] = useState("");
 
   const toggle = (id: string) => {
@@ -41,18 +43,15 @@ export function AskDoctor() {
 
   return (
     <div className="max-w-readable">
-      <h1 className="text-3xl md:text-4xl">What to ask your doctor</h1>
+      <h1 className="text-3xl md:text-4xl">{t("ask.h1")}</h1>
       <p className="mt-2 text-muted">
-        These questions come straight from your own flagged signals and blood
-        work — specific, plain, and ready for the room. Tick the ones you want to
-        raise, add your own, and they'll all flow into your doctor report.
+        {t("ask.intro")}
       </p>
 
       <div className="mt-8 space-y-3">
         {questions.length === 0 && (
           <div className="card p-6 text-muted">
-            Nothing flagged right now — which is good news. You can still add
-            your own questions below.
+            {lang === "zh" ? "目前沒有標示任何事——這是好消息。你仍可在下方加入自己的問題。" : "Nothing flagged right now — which is good news. You can still add your own questions below."}
           </div>
         )}
         {questions.map((q) => {
@@ -74,7 +73,7 @@ export function AskDoctor() {
               </button>
               <div className="min-w-0 flex-1">
                 <p className="text-lg font-medium leading-snug text-ink">
-                  {q.text}
+                  {lang === "zh" ? q.textZh ?? q.text : q.text}
                 </p>
                 <p className="mt-1 text-sm text-muted">{q.why}</p>
                 <div className="mt-2 flex items-center gap-3">
@@ -84,7 +83,7 @@ export function AskDoctor() {
                       to={`/insight/${q.insightId}`}
                       className="link inline-flex items-center gap-1 text-sm"
                     >
-                      see why <Icon icon={ArrowRight} size={14} />
+                      {t("ask.seeWhy")} <Icon icon={ArrowRight} size={14} />
                     </Link>
                   )}
                   {q.custom && (
@@ -92,7 +91,7 @@ export function AskDoctor() {
                       onClick={() => removeCustom(q.id)}
                       className="text-sm text-faint hover:text-brick"
                     >
-                      remove
+                      {lang === "zh" ? "移除" : "remove"}
                     </button>
                   )}
                 </div>
@@ -103,29 +102,29 @@ export function AskDoctor() {
       </div>
 
       <div className="card mt-5 p-5">
-        <label className="field-label">Add your own question</label>
+        <label className="field-label">{t("ask.add")}</label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <input
             className="field flex-1"
-            placeholder="e.g. Should I worry about my occasional dizziness?"
+            placeholder={lang === "zh" ? "例如：我偶爾頭暈，需要擔心嗎？" : "e.g. Should I worry about my occasional dizziness?"}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
           />
           <button className="btn-ghost" onClick={addCustom}>
             <Icon icon={Plus} size={18} />
-            Add
+            {t("ask.addBtn")}
           </button>
         </div>
       </div>
 
       <div className="mt-8 flex items-center justify-between rounded-2xl bg-clay-tint/60 p-5">
         <p className="text-muted">
-          {checkedQ.length} of {questions.length} ready for your report.
+          {lang === "zh" ? `已選 ${checkedQ.length} / ${questions.length} 項，準備好放入報告。` : `${checkedQ.length} of ${questions.length} ready for your report.`}
         </p>
         <Link to="/report" className="btn-primary">
           <Icon icon={FilePlus2} size={18} />
-          Build the report
+          {t("ask.build")}
         </Link>
       </div>
     </div>

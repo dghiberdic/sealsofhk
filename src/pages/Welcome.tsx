@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { Brandmark } from "../components/ui";
+import { useT } from "../lib/i18n";
 import { useStore } from "../lib/store";
 
 export function Welcome() {
   const nav = useNavigate();
-  const { set } = useStore();
+  const { set, profile } = useStore();
+  const { t } = useT();
 
   return (
     <div className="min-h-screen bg-cream">
@@ -13,50 +15,34 @@ export function Welcome() {
           <Brandmark size={48} tagline />
         </div>
 
-        <h1 className="text-4xl leading-tight md:text-5xl">
-          A calm look at your health, every morning.
-        </h1>
+        <h1 className="text-4xl leading-tight md:text-5xl">{t("welcome.h1")}</h1>
         <p className="mt-5 text-lg leading-relaxed text-muted">
-          HeartSum gathers the numbers from your Apple Watch and your blood
-          tests into one easy place. It learns what's normal for you, gently
-          points out anything worth noticing, and gets you ready for your
-          doctor — all in plain English.
+          {t("welcome.intro")}
         </p>
 
         <div className="mt-8 space-y-3">
           <div className="card p-5">
-            <h2 className="text-lg">What HeartSum is</h2>
-            <p className="mt-1 text-muted">
-              An early-warning helper and a bridge to your doctor. Most days
-              it'll simply tell you you're steady. Now and then, it'll gently
-              flag something worth a look.
-            </p>
+            <h2 className="text-lg">{t("welcome.isTitle")}</h2>
+            <p className="mt-1 text-muted">{t("welcome.isBody")}</p>
           </div>
           <div className="card p-5">
-            <h2 className="text-lg">What it isn't</h2>
-            <p className="mt-1 text-muted">
-              It is <strong>not</strong> a diagnosis, and it will never tell you
-              to start, stop, or change any medication or treatment. That's
-              always a conversation for you and a real clinician.
-            </p>
+            <h2 className="text-lg">{t("welcome.isntTitle")}</h2>
+            <p className="mt-1 text-muted">{t("welcome.isntBody")}</p>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <button
-            className="btn-primary flex-1"
-            onClick={() => nav("/profile")}
-          >
-            Get started
+          <button className="btn-primary flex-1" onClick={() => nav("/profile")}>
+            {t("welcome.start")}
           </button>
           <button
             className="btn-ghost flex-1"
             onClick={() => {
-              set({ setUpByCarer: true } as never);
+              set({ profile: { ...profile, setUpByCarer: true } });
               nav("/profile");
             }}
           >
-            I'm helping a family member set this up
+            {t("welcome.carer")}
           </button>
         </div>
       </div>

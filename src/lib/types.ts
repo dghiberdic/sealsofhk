@@ -1,3 +1,6 @@
+// UI language — English or Traditional Chinese (Hong Kong).
+export type Lang = "en" | "zh";
+
 // Evidence tiers, straight from the "Conditions & Early Signals" reference.
 export type Tier = 1 | 2 | 3;
 
@@ -92,10 +95,12 @@ export interface Profile {
 export interface Insight {
   id: string;
   title: string;
+  titleZh?: string; // Traditional-Chinese title (for the bilingual report/cards)
   focus: FocusArea;
   tier: Tier;
   status: Status;
   oneLine: string; // short headline shown on cards
+  oneLineZh?: string; // Traditional-Chinese one-liner
   what: string; // What is this?
   meaning: string; // What might it mean?
   sure: string; // How sure are we? (beyond the tier blurb)
@@ -108,6 +113,7 @@ export interface Insight {
 export interface DoctorQuestion {
   id: string;
   text: string;
+  textZh?: string;
   why: string;
   tier: Tier;
   insightId?: string;

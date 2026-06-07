@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useStore } from "../lib/store";
+import { useT, type StrKey } from "../lib/i18n";
 import { Brandmark, Reassure, statusMeta } from "./ui";
 import {
   Activity,
@@ -16,19 +17,34 @@ import type { LucideProps } from "lucide-react";
 
 const nav: {
   to: string;
-  label: string;
+  key: StrKey;
   icon: ComponentType<LucideProps>;
 }[] = [
-  { to: "/today", label: "Today", icon: Sun },
-  { to: "/signals", label: "Signals", icon: Activity },
-  { to: "/more", label: "More info", icon: BarChart3 },
-  { to: "/ask", label: "Ask your doctor", icon: MessagesSquare },
-  { to: "/report", label: "Doctor report", icon: FileText },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/today", key: "nav.today", icon: Sun },
+  { to: "/signals", key: "nav.signals", icon: Activity },
+  { to: "/more", key: "nav.more", icon: BarChart3 },
+  { to: "/ask", key: "nav.ask", icon: MessagesSquare },
+  { to: "/report", key: "nav.report", icon: FileText },
+  { to: "/settings", key: "nav.settings", icon: Settings },
 ];
+
+function LangToggle({ className = "" }: { className?: string }) {
+  const { set, lang } = useStore();
+  const { t } = useT();
+  return (
+    <button
+      onClick={() => set({ lang: lang === "en" ? "zh" : "en" })}
+      className={`rounded-full border border-hair bg-paper px-3 py-1 text-sm font-medium text-muted transition hover:text-ink ${className}`}
+      aria-label="Switch language"
+    >
+      {t("lang.toggle")}
+    </button>
+  );
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   const { questions, overall, profile } = useStore();
+  const { t, lang } = useT();
   const loc = useLocation();
   const initial = profile.name.trim().charAt(0).toUpperCase() || "M";
 
@@ -36,9 +52,12 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen md:flex">
       {/* Sidebar (desktop) */}
       <aside className="no-print hidden w-64 shrink-0 flex-col border-r border-hair bg-surface-soft px-4 py-6 md:flex">
-        <NavLink to="/today" className="mb-8 block px-3">
+        <NavLink to="/today" className="mb-6 block px-3">
           <Brandmark />
         </NavLink>
+        <div className="mb-3 px-3">
+          <LangToggle />
+        </div>
         <nav className="flex flex-col gap-0.5">
           {nav.map((n) => (
             <NavLink
@@ -54,7 +73,7 @@ export function Layout({ children }: { children: ReactNode }) {
             >
               <span className="flex items-center gap-3">
                 <Icon icon={n.icon} size={20} />
-                {n.label}
+                {t(n.key)}
               </span>
               {n.to === "/ask" && questions.length > 0 && (
                 <span className="rounded-full bg-clay px-2 py-0.5 text-xs font-semibold text-paper">
@@ -77,7 +96,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 {profile.name}
               </div>
               <div className="text-xs text-faint">
-                Age {profile.age} · Profile
+                {lang === "zh" ? `年齡 ${profile.age} · 個人檔案` : `Age ${profile.age} · Profile`}
               </div>
             </div>
           </div>
@@ -87,10 +106,13 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Mobile top bar */}
       <header className="no-print sticky top-0 z-20 flex items-center justify-between border-b border-hair bg-cream/85 px-4 py-3 backdrop-blur md:hidden">
         <Brandmark size={30} />
-        <span
-          className={`h-2.5 w-2.5 rounded-full ${statusMeta[overall.level].dot}`}
-          aria-label={`Overall status: ${statusMeta[overall.level].label}`}
-        />
+        <div className="flex items-center gap-3">
+          <LangToggle />
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${statusMeta[overall.level].dot}`}
+            aria-label={`Overall status: ${statusMeta[overall.level].label}`}
+          />
+        </div>
       </header>
 
       {/* Main */}
@@ -117,7 +139,7 @@ export function Layout({ children }: { children: ReactNode }) {
           >
             <Icon icon={n.icon} size={20} />
             <span className="text-center leading-tight">
-              {n.label.split(" ")[0]}
+              {lang === "en" ? t(n.key).split(" ")[0] : t(n.key)}
             </span>
           </NavLink>
         ))}

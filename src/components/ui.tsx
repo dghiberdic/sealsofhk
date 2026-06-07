@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { TIER_BLURB, TIER_LABEL, type Status, type Tier } from "../lib/types";
+import { useT } from "../lib/i18n";
 import { HeartPulse, Icon, ShieldCheck } from "./icons";
 
 // --- Brandmark --------------------------------------------------------------
@@ -102,10 +103,11 @@ export function TierBadge({
 // --- Status dot / pill ------------------------------------------------------
 export const statusMeta: Record<
   Status,
-  { label: string; dot: string; text: string; bg: string; border: string }
+  { label: string; labelZh: string; dot: string; text: string; bg: string; border: string }
 > = {
   steady: {
     label: "Steady",
+    labelZh: "平穩",
     dot: "bg-sage",
     text: "text-sage-deep",
     bg: "bg-sage-tint",
@@ -113,6 +115,7 @@ export const statusMeta: Record<
   },
   watch: {
     label: "Worth watching",
+    labelZh: "值得留意",
     dot: "bg-gold",
     text: "text-gold-deep",
     bg: "bg-gold-tint",
@@ -120,6 +123,7 @@ export const statusMeta: Record<
   },
   look: {
     label: "Please review",
+    labelZh: "請覆檢",
     dot: "bg-brick",
     text: "text-brick-deep",
     bg: "bg-brick-tint",
@@ -128,11 +132,12 @@ export const statusMeta: Record<
 };
 
 export function StatusPill({ status }: { status: Status }) {
+  const { lang } = useT();
   const m = statusMeta[status];
   return (
     <span className={`pill ${m.bg} ${m.text} ${m.border}`}>
       <span className={`h-2 w-2 rounded-full ${m.dot}`} />
-      {m.label}
+      {lang === "zh" ? m.labelZh : m.label}
     </span>
   );
 }
@@ -168,16 +173,18 @@ export function SectionTitle({
 
 // --- The short "signals, not diagnoses" reassurance capsule -----------------
 export function Reassure({ className = "" }: { className?: string }) {
+  const { lang } = useT();
   return (
     <span className={`reassure ${className}`}>
       <Icon icon={ShieldCheck} size={18} className="shrink-0 text-clay-soft" />
-      Signals, not diagnoses
+      {lang === "zh" ? "訊號，並非診斷" : "Signals, not diagnoses"}
     </span>
   );
 }
 
 // --- The fuller reassurance note, used at the foot of screens ----------------
 export function SignalNote({ className = "" }: { className?: string }) {
+  const { t } = useT();
   return (
     <p
       className={`flex items-start gap-2.5 text-sm leading-relaxed text-muted ${className}`}
@@ -187,10 +194,7 @@ export function SignalNote({ className = "" }: { className?: string }) {
         size={18}
         className="mt-0.5 shrink-0 text-clay-soft"
       />
-      <span>
-        These are wellness signals, not a diagnosis. HeartSum never tells you to
-        start, stop, or change any medication or treatment.
-      </span>
+      <span>{t("common.signalNote")}</span>
     </p>
   );
 }
