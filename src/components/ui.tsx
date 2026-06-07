@@ -1,7 +1,22 @@
 import type { ReactNode } from "react";
 import { TIER_BLURB, TIER_LABEL, type Status, type Tier } from "../lib/types";
 import { useT } from "../lib/i18n";
+import { useStore } from "../lib/store";
 import { HeartPulse, Icon, ShieldCheck } from "./icons";
+
+// Language toggle — flips the whole app between English and 繁體中文.
+export function LangToggle({ className = "" }: { className?: string }) {
+  const { set, lang } = useStore();
+  return (
+    <button
+      onClick={() => set({ lang: lang === "en" ? "zh" : "en" })}
+      className={`rounded-full border border-hair bg-paper px-3 py-1 text-sm font-medium text-muted transition hover:text-ink ${className}`}
+      aria-label="Switch language"
+    >
+      {lang === "en" ? "中文" : "EN"}
+    </button>
+  );
+}
 
 // --- Brandmark --------------------------------------------------------------
 // A heart-pulse glyph in a clay rounded-square, with the Lora wordmark.

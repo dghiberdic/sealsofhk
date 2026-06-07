@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Brandmark } from "../components/ui";
+import { Brandmark, LangToggle } from "../components/ui";
 import { useT } from "../lib/i18n";
 import { useStore } from "../lib/store";
 
@@ -11,8 +11,9 @@ export function Welcome() {
   return (
     <div className="min-h-screen bg-cream">
       <div className="mx-auto flex max-w-readable flex-col px-6 py-12 md:py-20">
-        <div className="mb-8">
+        <div className="mb-8 flex items-start justify-between gap-4">
           <Brandmark size={48} tagline />
+          <LangToggle />
         </div>
 
         <h1 className="text-4xl leading-tight md:text-5xl">{t("welcome.h1")}</h1>

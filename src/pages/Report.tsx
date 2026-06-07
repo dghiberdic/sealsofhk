@@ -41,13 +41,13 @@ function biomarkerState(b: Biomarker): "high" | "low" | "ok" {
   return "ok";
 }
 
-// Bilingual section heading — Chinese first, English below.
+// Bilingual section heading — Chinese first, English clearly below.
 function H({ zh, en }: { zh: string; en: string }) {
   return (
-    <h3 className="text-lg leading-tight">
-      {zh}
-      <span className="ml-2 align-middle text-sm font-normal text-faint">{en}</span>
-    </h3>
+    <div>
+      <h3 className="text-lg leading-tight">{zh}</h3>
+      <div className="text-sm font-medium text-muted">{en}</div>
+    </div>
   );
 }
 
@@ -246,7 +246,7 @@ export function Report({ shared = false }: { shared?: boolean }) {
                       <tr key={b.key} className="border-t border-hair">
                         <td className="py-1.5 pr-2 text-ink">
                           {BIOMARKER_ZH[b.key] ?? ""}
-                          <span className="block text-xs text-faint">{b.name}</span>
+                          <span className="block text-sm text-muted">{b.name}</span>
                         </td>
                         <td className="py-1.5 pr-2 font-medium text-ink">
                           {dualUnit(b.key, b.value as number, b.unit)}

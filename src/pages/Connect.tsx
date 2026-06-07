@@ -4,6 +4,7 @@ import { Droplet, FileText, Icon, Watch } from "../components/icons";
 import { LabPhotoUpload } from "../components/LabPhotoUpload";
 import { WatchUpload } from "../components/WatchUpload";
 import { EHealthUpload } from "../components/EHealthUpload";
+import { LangToggle } from "../components/ui";
 import { useT } from "../lib/i18n";
 import { useStore } from "../lib/store";
 
@@ -16,7 +17,10 @@ export function Connect() {
   return (
     <div className="min-h-screen bg-cream">
       <div className="mx-auto max-w-readable px-6 py-12">
-        <p className="text-sm font-medium text-clay-deep">{t("connect.step")}</p>
+        <div className="flex items-start justify-between gap-4">
+          <p className="text-sm font-medium text-clay-deep">{t("connect.step")}</p>
+          <LangToggle />
+        </div>
         <h1 className="mt-1 text-3xl">{t("connect.h1")}</h1>
         <p className="mt-2 text-muted">
           {t("connect.intro")}

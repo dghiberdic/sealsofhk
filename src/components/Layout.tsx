@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useStore } from "../lib/store";
 import { useT, type StrKey } from "../lib/i18n";
-import { Brandmark, Reassure, statusMeta } from "./ui";
+import { Brandmark, LangToggle, Reassure, statusMeta } from "./ui";
 import {
   Activity,
   BarChart3,
@@ -27,20 +27,6 @@ const nav: {
   { to: "/report", key: "nav.report", icon: FileText },
   { to: "/settings", key: "nav.settings", icon: Settings },
 ];
-
-function LangToggle({ className = "" }: { className?: string }) {
-  const { set, lang } = useStore();
-  const { t } = useT();
-  return (
-    <button
-      onClick={() => set({ lang: lang === "en" ? "zh" : "en" })}
-      className={`rounded-full border border-hair bg-paper px-3 py-1 text-sm font-medium text-muted transition hover:text-ink ${className}`}
-      aria-label="Switch language"
-    >
-      {t("lang.toggle")}
-    </button>
-  );
-}
 
 export function Layout({ children }: { children: ReactNode }) {
   const { questions, overall, profile } = useStore();
