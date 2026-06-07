@@ -228,6 +228,25 @@ export const STR = {
   "profile.q.priorHeartFailure": { en: "I have a heart-failure diagnosis", zh: "我有心臟衰竭的診斷" },
   "profile.q.knownVascularDisease": { en: "I have known vascular disease", zh: "我有已知的血管疾病" },
   "profile.continue": { en: "Continue", zh: "繼續" },
+
+  // settings — Telegram carer alerts
+  "settings.tg.title": { en: "Carer alerts (Telegram)", zh: "照顧者提示（Telegram）" },
+  "settings.tg.body": {
+    en: "Send the green / yellow / red caretaker alert to a family member's Telegram when something needs attention.",
+    zh: "當有需要留意的情況時，把綠／黃／紅照顧者提示傳送到家人的 Telegram。",
+  },
+  "settings.tg.token": { en: "Bot token", zh: "機械人權杖 (Bot token)" },
+  "settings.tg.chatId": { en: "Carer's chat ID", zh: "照顧者的 chat ID" },
+  "settings.tg.auto": {
+    en: "Auto-send when a yellow or red alert is detected",
+    zh: "偵測到黃色或紅色警示時自動傳送",
+  },
+  "settings.tg.test": { en: "Send a test message", zh: "傳送測試訊息" },
+  "settings.tg.sent": { en: "Sent ✓", zh: "已傳送 ✓" },
+  "settings.tg.help": {
+    en: "Create a bot with @BotFather to get a token. The carer must message your bot once so it's allowed to reach them.",
+    zh: "用 @BotFather 建立機械人以取得權杖。照顧者須先向你的機械人發一則訊息，機械人才能聯絡他們。",
+  },
 } as const satisfies Record<string, Pair>;
 
 export type StrKey = keyof typeof STR;

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Download, Icon, Trash2 } from "../components/icons";
+import { Check, Download, Icon, MessagesSquare, Trash2 } from "../components/icons";
 import { useT } from "../lib/i18n";
 import { useStore } from "../lib/store";
+import { carerAlertText, sendTelegram } from "../lib/telegram";
 
 function Toggle({
   on,
@@ -33,11 +34,34 @@ function Toggle({
 }
 
 export function Settings() {
-  const { profile, biomarkers, watchConnected, dark, carerName, lang, set, reset } =
-    useStore();
+  const {
+    profile,
+    biomarkers,
+    watchConnected,
+    dark,
+    carerName,
+    lang,
+    tgToken,
+    tgChatId,
+    tgAuto,
+    watch,
+    set,
+    reset,
+  } = useStore();
   const { t } = useT();
   const nav = useNavigate();
   const [carer, setCarer] = useState(carerName ?? "");
+  const [tgStatus, setTgStatus] = useState<{ ok?: boolean; msg: string } | null>(null);
+
+  const sendTest = async () => {
+    setTgStatus({ msg: "…" });
+    const r = await sendTelegram(
+      tgToken,
+      tgChatId,
+      carerAlertText(profile.name, watch),
+    );
+    setTgStatus({ ok: r.ok, msg: r.ok ? t("settings.tg.sent") : r.error ?? "" });
+  };
 
   const exportData = () => {
     const blob = new Blob([JSON.stringify({ profile, biomarkers }, null, 2)], {
@@ -129,6 +153,62 @@ export function Settings() {
             </button>
           )}
         </div>
+      </section>
+
+      <section className="card mt-5 p-6">
+        <h2 className="flex items-center gap-2 text-xl">
+          <Icon icon={MessagesSquare} size={20} className="text-clay" />
+          {t("settings.tg.title")}
+        </h2>
+        <p className="mt-1 text-muted">{t("settings.tg.body")}</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="field-label">{t("settings.tg.token")}</label>
+            <input
+              className="field font-mono text-sm"
+              type="password"
+              placeholder="123456:ABC-DEF…"
+              value={tgToken}
+              onChange={(e) => set({ tgToken: e.target.value })}
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <label className="field-label">{t("settings.tg.chatId")}</label>
+            <input
+              className="field font-mono text-sm"
+              placeholder="e.g. 987654321"
+              value={tgChatId}
+              onChange={(e) => set({ tgChatId: e.target.value })}
+              autoComplete="off"
+            />
+          </div>
+        </div>
+        <label className="mt-3 flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-clay"
+            checked={tgAuto}
+            onChange={(e) => set({ tgAuto: e.target.checked })}
+          />
+          <span className="text-sm text-ink">{t("settings.tg.auto")}</span>
+        </label>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            className="btn-ghost disabled:opacity-50"
+            onClick={sendTest}
+            disabled={!tgToken.trim() || !tgChatId.trim()}
+          >
+            <Icon icon={MessagesSquare} size={18} />
+            {t("settings.tg.test")}
+          </button>
+          {tgStatus && (
+            <span className={`text-sm ${tgStatus.ok ? "text-sage-deep" : "text-brick"}`}>
+              {tgStatus.msg}
+            </span>
+          )}
+        </div>
+        <p className="mt-3 text-xs text-faint">{t("settings.tg.help")}</p>
       </section>
 
       <section className="card mt-5 p-6">

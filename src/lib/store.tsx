@@ -51,6 +51,11 @@ interface Persisted {
   dark: boolean;
   carerName: string | null;
   lang: Lang;
+  // Telegram carer alerts (browser → Telegram Bot API). Token is a user secret.
+  tgToken: string;
+  tgChatId: string;
+  tgAuto: boolean; // auto-send when status crosses into yellow/red
+  tgLastStatus: "green" | "yellow" | "red" | null; // dedupe so we don't re-send
 }
 
 const initial: Persisted = {
@@ -67,6 +72,10 @@ const initial: Persisted = {
   dark: false,
   carerName: null,
   lang: "en",
+  tgToken: "",
+  tgChatId: "",
+  tgAuto: false,
+  tgLastStatus: null,
 };
 
 function load(): Persisted {

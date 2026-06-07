@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Eyebrow, SignalNote, StatusPill } from "../components/ui";
@@ -10,6 +10,7 @@ import {
   Footprints,
   Heart,
   Icon,
+  MessagesSquare,
   Moon,
   TrendingUp,
   Wind,
@@ -17,6 +18,7 @@ import {
 import { baseline, round, today } from "../lib/analysis";
 import { useStore } from "../lib/store";
 import { useT, type StrKey } from "../lib/i18n";
+import { carerAlertText, sendTelegram } from "../lib/telegram";
 import type { DayMetric, Lang } from "../lib/types";
 
 function greeting(lang: Lang) {
@@ -91,9 +93,46 @@ const ragMeta = {
 } as const;
 
 export function Today() {
-  const { profile, metrics, overall, watch, carerName } = useStore();
+  const {
+    profile,
+    metrics,
+    overall,
+    watch,
+    carerName,
+    tgToken,
+    tgChatId,
+    tgAuto,
+    tgLastStatus,
+    set,
+  } = useStore();
   const { t, lang } = useT();
   const td = today(metrics);
+  const [notify, setNotify] = useState<{ ok?: boolean; msg: string } | null>(null);
+  const tgReady = Boolean(tgToken.trim() && tgChatId.trim());
+
+  // Auto-notify the carer the moment the status crosses into yellow/red — once
+  // per transition (tgLastStatus dedupes; green resets it).
+  useEffect(() => {
+    if (!tgAuto || !tgReady) return;
+    const st = watch.status;
+    if ((st === "yellow" || st === "red") && st !== tgLastStatus) {
+      void sendTelegram(tgToken, tgChatId, carerAlertText(profile.name, watch)).then(
+        (r) => r.ok && set({ tgLastStatus: st }),
+      );
+    } else if (st === "green" && tgLastStatus && tgLastStatus !== "green") {
+      set({ tgLastStatus: "green" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watch.status, tgAuto, tgReady, tgLastStatus]);
+
+  const notifyCarer = async () => {
+    setNotify({ msg: "…" });
+    const r = await sendTelegram(tgToken, tgChatId, carerAlertText(profile.name, watch));
+    setNotify({
+      ok: r.ok,
+      msg: r.ok ? (lang === "zh" ? "已傳送 ✓" : "Sent ✓") : r.error ?? "",
+    });
+  };
 
   const headline = t(
     overall.level === "steady"
@@ -150,6 +189,26 @@ export function Today() {
           </div>
           <p className="mt-2 leading-relaxed text-ink">{watch.caretaker.zh}</p>
           <p className="mt-1 leading-relaxed text-muted">{watch.caretaker.en}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {tgReady ? (
+              <button
+                className="inline-flex items-center gap-1.5 rounded-full border border-hair bg-paper px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-cream"
+                onClick={notifyCarer}
+              >
+                <Icon icon={MessagesSquare} size={16} className="text-clay" />
+                {lang === "zh" ? "用 Telegram 通知照顧者" : "Notify carer on Telegram"}
+              </button>
+            ) : (
+              <Link to="/settings" className="link text-sm">
+                {lang === "zh" ? "在設定中啟用 Telegram 提示" : "Set up Telegram alerts in Settings"}
+              </Link>
+            )}
+            {notify && (
+              <span className={`text-sm ${notify.ok ? "text-sage-deep" : "text-brick"}`}>
+                {notify.msg}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
