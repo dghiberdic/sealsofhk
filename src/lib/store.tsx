@@ -22,6 +22,7 @@ import {
 import { framingham } from "./framingham";
 import { cha2ds2vasc } from "./cha2ds2vasc";
 import { assessWatch } from "./rules";
+import { DEFAULT_TG_CHAT_ID, DEFAULT_TG_TOKEN } from "./telegram";
 import type {
   Biomarker,
   DayMetric,
@@ -72,8 +73,8 @@ const initial: Persisted = {
   dark: false,
   carerName: null,
   lang: "en",
-  tgToken: "",
-  tgChatId: "",
+  tgToken: DEFAULT_TG_TOKEN,
+  tgChatId: DEFAULT_TG_CHAT_ID,
   tgAuto: false,
   tgLastStatus: null,
 };
@@ -89,6 +90,9 @@ function load(): Persisted {
       ...initial,
       ...parsed,
       profile: { ...defaultProfile, ...(parsed.profile ?? {}) },
+      // Hardcoded Telegram defaults win when nothing was saved/entered.
+      tgToken: parsed.tgToken || initial.tgToken,
+      tgChatId: parsed.tgChatId || initial.tgChatId,
     };
   } catch {
     return initial;

@@ -10,6 +10,13 @@
 
 import type { WatchAssessment } from "./rules";
 
+// Default bot config comes from env (VITE_TG_BOT_TOKEN / VITE_TG_CHAT_ID) — no
+// secret is committed to the repo. The Settings fields override these per
+// browser. Leave the env vars unset and the feature simply stays idle until a
+// token + chat id are entered in Settings.
+export const DEFAULT_TG_TOKEN = import.meta.env.VITE_TG_BOT_TOKEN || "";
+export const DEFAULT_TG_CHAT_ID = import.meta.env.VITE_TG_CHAT_ID || "";
+
 export interface TelegramResult {
   ok: boolean;
   error?: string;
